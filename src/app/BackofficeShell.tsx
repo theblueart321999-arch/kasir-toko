@@ -171,32 +171,31 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
 
   return (
     <div className={`backoffice-layout ${collapsed ? "sidebar-collapsed" : ""}`}>
-      <header className="backoffice-sidebar-header">
-        <button
-          className="sidebar-toggle"
-          type="button"
-          aria-label={collapsed ? "Lebarkan sidebar" : "Minimalkan sidebar"}
-          title={collapsed ? "Lebarkan sidebar" : "Minimalkan sidebar"}
-          onClick={() => {
-            const next = !collapsed;
-            setCollapsed(next);
-            window.localStorage.setItem("tanibangun-sidebar-collapsed", String(next));
-          }}
-        >
-          <svg className="sidebar-toggle-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <rect className="sidebar-toggle-line" x="3" y="4" width="18" height="3" rx="1.5" />
-            <rect className="sidebar-toggle-line" x="3" y="10.5" width="18" height="3" rx="1.5" />
-            <rect className="sidebar-toggle-line" x="3" y="17" width="18" height="3" rx="1.5" />
-          </svg>
-        </button>
-        <Link className="backoffice-brand" href="/dashboard" onClick={handleBrandClick} title={collapsed ? "Buka sidebar" : "Tutup sidebar"}>
-          <span className="backoffice-brand-mark" aria-hidden="true"><i>K</i><i>T</i></span>
-          <span className="backoffice-brand-name"><b>{store.storeName}</b><small>KASIR TOKO</small></span>
-        </Link>
-      </header>
-      <div className="backoffice-body">
-        <aside ref={sidebarRef} className="backoffice-sidebar" aria-label="Sidebar navigasi">
-          <nav ref={navRef} className="backoffice-nav" aria-label="Menu aplikasi">
+      <aside ref={sidebarRef} className="backoffice-sidebar" aria-label="Sidebar navigasi">
+        <div className="backoffice-sidebar-header">
+          <button
+            className="sidebar-toggle"
+            type="button"
+            aria-label={collapsed ? "Lebarkan sidebar" : "Minimalkan sidebar"}
+            title={collapsed ? "Lebarkan sidebar" : "Minimalkan sidebar"}
+            onClick={() => {
+              const next = !collapsed;
+              setCollapsed(next);
+              window.localStorage.setItem("tanibangun-sidebar-collapsed", String(next));
+            }}
+          >
+            <svg className="sidebar-toggle-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect className="sidebar-toggle-line" x="3" y="4" width="18" height="3" rx="1.5" />
+              <rect className="sidebar-toggle-line" x="3" y="10.5" width="18" height="3" rx="1.5" />
+              <rect className="sidebar-toggle-line" x="3" y="17" width="18" height="3" rx="1.5" />
+            </svg>
+          </button>
+          <Link className="backoffice-brand" href="/dashboard" onClick={handleBrandClick} title={collapsed ? "Buka sidebar" : "Tutup sidebar"}>
+            <span className="backoffice-brand-mark" aria-hidden="true"><i>K</i><i>T</i></span>
+            <span className="backoffice-brand-name"><b>{store.storeName}</b><small>KASIR TOKO</small></span>
+          </Link>
+        </div>
+        <nav ref={navRef} className="backoffice-nav" aria-label="Menu aplikasi">
           {groups.map((group) => <div className="nav-group" key={group.label}>
             <p>{group.label}</p>
             {group.items.map((item) => {
@@ -204,8 +203,8 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
               return <Link className={active ? "active" : ""} href={item.href} key={item.href} ref={active ? activeLinkRef : undefined} title={collapsed ? item.label : undefined} onClick={minimizeSidebar}><span>{item.icon}</span><b><em>{shortMenuLabel(item.label)}</em><i>{item.label}</i></b></Link>;
             })}
           </div>)}
-          </nav>
-          <div className="backoffice-footer">
+        </nav>
+        <div className="backoffice-footer">
           <Link className={isActive("/pengaturan") ? "active" : ""} href="/pengaturan" ref={isActive("/pengaturan") ? activeLinkRef : undefined} title={collapsed ? "Setting" : undefined} onClick={minimizeSidebar}><span>⚙</span><b><em>Setting</em><i>Setting</i></b></Link>
           <div className="backoffice-user-menu">
             <button
@@ -225,15 +224,14 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
               </div>
             )}
           </div>
-          </div>
-        </aside>
-        <section className="backoffice-content">
-          <button className="theme-toggle theme-toggle-top" type="button" onClick={toggleTheme} title={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"} aria-label={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"}>
-            <span aria-hidden="true">{darkMode ? "☀" : "☾"}</span>
-          </button>
-          {children}
-        </section>
-      </div>
+        </div>
+      </aside>
+      <section className="backoffice-content">
+        <button className="theme-toggle theme-toggle-top" type="button" onClick={toggleTheme} title={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"} aria-label={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"}>
+          <span aria-hidden="true">{darkMode ? "☀" : "☾"}</span>
+        </button>
+        {children}
+      </section>
     </div>
   );
 }

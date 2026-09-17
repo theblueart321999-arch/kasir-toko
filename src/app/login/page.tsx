@@ -13,10 +13,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const googleError = searchParams.get("error");
   function loginGoogle() {
-    fetch("/api/auth/google").then(async (response) => {
-      if (response.redirected) window.location.assign(response.url);
-      else { const data = await response.json(); setError(data.error || "Login Google gagal."); }
-    }).catch(() => setError("Login Google gagal. Periksa koneksi server."));
+    window.location.href = "/api/auth/google";
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {

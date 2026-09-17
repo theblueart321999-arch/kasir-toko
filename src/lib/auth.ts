@@ -52,8 +52,11 @@ export async function getCurrentOperator() {
 export async function deleteCurrentSession() {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
-  if (token) {
-    await prisma.session.deleteMany({ where: { tokenHash: hashSessionToken(token) } });
+  try {
+    if (token) {
+      await prisma.session.deleteMany({ where: { tokenHash: hashSessionToken(token) } });
+    }
+  } finally {
+    cookieStore.delete(SESSION_COOKIE);
   }
-  cookieStore.delete(SESSION_COOKIE);
 }

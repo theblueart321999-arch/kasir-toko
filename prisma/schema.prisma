@@ -159,9 +159,12 @@ model Product {
   category   Category
   categoryId Int?
   price      Int
+  defaultPrice Int?
+  costPrice  Int        @default(0)
   discountPercent Float    @default(0)
   stock      Int        @default(0)
   unit       String
+  imageUrl   String?
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   saleItems  SaleItem[]
@@ -170,12 +173,26 @@ model Product {
   saleReturnItems SaleReturnItem[]
   purchaseItems PurchaseItem[]
   purchaseReturnItems PurchaseReturnItem[]
+  priceLevels PriceLevel[]
   accountId   Int?
   account     Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@index([category])
   @@index([categoryId])
   @@index([name])
+}
+
+model PriceLevel {
+  id          Int      @id @default(autoincrement())
+  productId   Int
+  minQuantity Int
+  price       Int
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([productId, minQuantity])
+  @@index([productId, minQuantity])
 }
 
 model StoreSetting {
@@ -269,7 +286,9 @@ model Purchase {
   subtotal        Int
   tax             Int                   @default(0)
   total           Int
+  paymentMethod   String              @default("CASH")
   paymentStatus   PurchasePaymentStatus @default(PAID)
+  paidAmount      Int                 @default(0)
   status          PurchaseStatus        @default(COMPLETED)
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt

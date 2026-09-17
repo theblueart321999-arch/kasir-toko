@@ -17,10 +17,15 @@ export async function POST(request: Request) {
   if (typeof username !== "string" || typeof password !== "string" || !username.trim() || !password) {
     return NextResponse.json({ error: "Username dan password wajib diisi." }, { status: 400 });
   }
-  const operator = await prisma.operator.findUnique({ where: { username: username.trim().toLowerCase() } });
-  if (!operator || !operator.active || !(await bcrypt.compare(password, operator.passwordHash))) {
-    return NextResponse.json({ error: "Username atau password salah." }, { status: 401 });
+  try {
+    const operator = await prisma.operator.findUnique({ where: { username: username.trim().toLowerCase() } });
+    if (!operator || !operator.active || !(await bcrypt.compare(password, operator.passwordHash))) {
+      return NextResponse.json({ error: "Username atau password salah." }, { status: 401 });
+    }
+    await createSession(operator.id);
+    return NextResponse.json({ operator: { id: operator.id, name: operator.name, username: operator.username, role: operator.role } });
+  } catch (error) {
+    console.error("Login gagal karena layanan autentikasi tidak tersedia:", error);
+    return NextResponse.json({ error: "Layanan login sedang tidak tersedia. Periksa koneksi database lalu coba lagi." }, { status: 503 });
   }
-  await createSession(operator.id);
-  return NextResponse.json({ operator: { id: operator.id, name: operator.name, username: operator.username, role: operator.role } });
 }

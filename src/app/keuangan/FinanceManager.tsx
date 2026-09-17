@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Pagination, { paginate } from "@/components/Pagination";
 
 type Account = { id: number; name: string; balance: number; openingBalance: number };
 type Movement = { id: number; type: string; amount: number; note?: string | null; createdAt: string; fromAccount?: { name: string } | null; toAccount?: { name: string } | null };
@@ -10,6 +11,9 @@ export default function FinanceManager() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [movements, setMovements] = useState<Movement[]>([]);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const pagedMovements = paginate(movements, page, pageSize);
   const load = async () => {
     const [a, m] = await Promise.all([fetch("/api/finance/accounts"), fetch("/api/finance/movements")]);
     const aj = await a.json(); const mj = await m.json();
@@ -32,7 +36,7 @@ export default function FinanceManager() {
     <section className="account-grid">{accounts.map((account) => <article className="account-card" key={account.id}><span>{account.name}</span><strong>{rupiah(account.balance)}</strong><small>Saldo berjalan</small></article>)}{!accounts.length && <p className="empty-state">Belum ada akun kas.</p>}</section>
     <section className="finance-columns">
       <form className="panel-form" onSubmit={submit}><h2>Catat arus uang</h2><label>Jenis<select name="type" defaultValue="IN"><option value="IN">Uang masuk</option><option value="OUT">Uang keluar</option><option value="TRANSFER">Transfer antar akun</option></select></label><label>Dari akun<select name="fromAccountId" defaultValue=""><option value="">- Pilih akun -</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label><label>Ke akun<select name="toAccountId" defaultValue=""><option value="">- Pilih akun -</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label><label>Jumlah (Rp)<input name="amount" type="number" min="1" required /></label><label>Keterangan<input name="note" placeholder="Contoh: setoran penjualan" /></label><button className="primary-button" type="submit">Simpan arus uang</button></form>
-      <div className="panel-table"><h2>Arus uang terbaru</h2><div className="table-scroll"><table><thead><tr><th>Tanggal</th><th>Jenis</th><th>Akun</th><th>Jumlah</th></tr></thead><tbody>{movements.map((m) => <tr key={m.id}><td>{new Date(m.createdAt).toLocaleDateString("id-ID")}</td><td>{m.type === "IN" ? "Masuk" : m.type === "OUT" ? "Keluar" : "Transfer"}</td><td>{m.fromAccount?.name || "-"} → {m.toAccount?.name || "-"}</td><td>{rupiah(m.amount)}</td></tr>)}</tbody></table></div></div>
+      <div className="panel-table"><h2>Arus uang terbaru</h2><div className="table-scroll"><table><thead><tr><th>Tanggal</th><th>Jenis</th><th>Akun</th><th>Jumlah</th></tr></thead><tbody>{pagedMovements.map((m) => <tr key={m.id}><td>{new Date(m.createdAt).toLocaleDateString("id-ID")}</td><td>{m.type === "IN" ? "Masuk" : m.type === "OUT" ? "Keluar" : "Transfer"}</td><td>{m.fromAccount?.name || "-"} → {m.toAccount?.name || "-"}</td><td>{rupiah(m.amount)}</td></tr>)}</tbody></table><Pagination page={page} pageSize={pageSize} total={movements.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} /></div></div>
     </section>
   </main>;
 }

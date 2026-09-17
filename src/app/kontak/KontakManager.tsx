@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import Pagination, { paginate } from "@/components/Pagination";
 
 type Contact = { id: number; name: string; phone: string | null; email: string | null; address: string | null; notes: string | null; active: boolean };
 type Form = { id?: number; name: string; phone: string; email: string; address: string; notes: string; active: boolean };
@@ -14,8 +15,12 @@ export default function KontakManager({ operatorName, canManage }: { operatorNam
   const [form, setForm] = useState<Form | null>(null);
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const contacts = tab === "customers" ? customers : suppliers;
   const visible = useMemo(() => contacts.filter((item) => `${item.name} ${item.phone || ""} ${item.email || ""}`.toLowerCase().includes(query.toLowerCase())), [contacts, query]);
+  useEffect(() => { setPage(1); }, [query, tab]);
+  const pagedContacts = useMemo(() => paginate(visible, page, pageSize), [visible, page, pageSize]);
 
   async function load() {
     setLoading(true);
@@ -53,7 +58,7 @@ export default function KontakManager({ operatorName, canManage }: { operatorNam
       <div className="contact-tabs"><button className={tab === "customers" ? "selected" : ""} onClick={() => { setTab("customers"); setQuery(""); }}>Customer <b>{customers.length}</b></button><button className={tab === "suppliers" ? "selected" : ""} onClick={() => { setTab("suppliers"); setQuery(""); }}>Supplier <b>{suppliers.length}</b></button></div>
       <div className="management-toolbar contact-toolbar"><div className="management-search"><span>⌕</span><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={`Cari ${title.toLowerCase()}...`} /></div>{canManage && <button className="management-primary" onClick={() => edit()}>+ {title} baru</button>}</div>
       <div className="card-title"><h2>Daftar {title}</h2><p>{visible.length} data ditampilkan</p></div>
-      {loading ? <p className="management-empty">Memuat data...</p> : <div className="product-table-wrap"><table className="product-table contact-table"><thead><tr><th>Nama</th><th>Kontak</th><th>Alamat</th><th>Status</th>{canManage && <th>Aksi</th>}</tr></thead><tbody>{visible.map((contact) => <tr key={contact.id}><td><b>{contact.name}</b><small>{contact.notes || "Tanpa catatan"}</small></td><td>{contact.phone || "-"}<small>{contact.email || "-"}</small></td><td>{contact.address || "-"}</td><td><span className={contact.active ? "contact-active" : "contact-inactive"}>{contact.active ? "Aktif" : "Nonaktif"}</span></td>{canManage && <td><button className="table-action" onClick={() => edit(contact)}>Edit</button><button className="table-delete" onClick={() => remove(contact)}>Hapus</button></td>}</tr>)}</tbody></table>{!visible.length && <p className="management-empty">Belum ada {title.toLowerCase()} yang cocok.</p>}</div>}
+      {loading ? <p className="management-empty">Memuat data...</p> : <div className="product-table-wrap"><table className="product-table contact-table"><thead><tr><th>Nama</th><th>Kontak</th><th>Alamat</th><th>Status</th>{canManage && <th>Aksi</th>}</tr></thead><tbody>{pagedContacts.map((contact) => <tr key={contact.id}><td><b>{contact.name}</b><small>{contact.notes || "Tanpa catatan"}</small></td><td>{contact.phone || "-"}<small>{contact.email || "-"}</small></td><td>{contact.address || "-"}</td><td><span className={contact.active ? "contact-active" : "contact-inactive"}>{contact.active ? "Aktif" : "Nonaktif"}</span></td>{canManage && <td><button className="table-action" onClick={() => edit(contact)}>Edit</button><button className="table-delete" onClick={() => remove(contact)}>Hapus</button></td>}</tr>)}</tbody></table>{!visible.length && <p className="management-empty">Belum ada {title.toLowerCase()} yang cocok.</p>}<Pagination page={page} pageSize={pageSize} total={visible.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} /></div>}
     </section>
     {form && <div className="modal-backdrop"><form className="product-form contact-form" onSubmit={save}><div className="modal-heading"><div><p className="eyebrow">DATA RELASI</p><h2>{form.id ? `Edit ${title.toLowerCase()}` : `Tambah ${title.toLowerCase()}`}</h2></div><button type="button" className="modal-close" onClick={() => setForm(null)}>×</button></div><label>Nama<input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label><div className="form-row"><label>Nomor telepon<input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></label><label>Email<input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label></div><label>Alamat<textarea rows={2} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></label><label>Catatan<textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></label><label className="contact-check"><input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} /> Kontak aktif</label><div className="form-actions"><button type="button" className="modal-cancel" onClick={() => setForm(null)}>Batal</button><button className="management-primary">Simpan</button></div></form></div>}
   </main>;

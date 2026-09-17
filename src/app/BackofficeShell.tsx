@@ -5,25 +5,25 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 type Operator = { id: number; name: string; email?: string | null; username: string; role: string; avatarUrl?: string | null };
+type Notification = { id: string; severity: "OVERDUE" | "DUE_SOON" | "WARNING"; title: string; description: string; href: string };
 const groups = [
   { label: "Navigasi", items: [
     { href: "/dashboard", icon: "⌂", label: "Dashboard" }, { href: "/", icon: "▣", label: "Kasir" },
-    { href: "/#riwayat-penjualan", icon: "↗", label: "Riwayat Penjualan" }, { href: "/#detail-pembayaran", icon: "▤", label: "Detail Pembayaran" },
-    { href: "/riwayat-penjualan", icon: "▥", label: "Cetak Struk" },
+    { href: "/riwayat-penjualan", icon: "↗", label: "Riwayat Penjualan" },
   ] },
   { label: "Transaksi", items: [
-    { href: "/pembelian", icon: "⇩", label: "Pembelian Baru" }, { href: "/pembelian#riwayat", icon: "◷", label: "Riwayat Pembelian" },
-    { href: "/pembelian#retur", icon: "↪", label: "Retur Pembelian" }, { href: "/retur-penjualan", icon: "↩", label: "Retur Penjualan" },
+    { href: "/pembelian", icon: "⇩", label: "Pembelian Baru" }, { href: "/pembelian/riwayat", icon: "◷", label: "Riwayat Pembelian" },
+    { href: "/pembelian/retur", icon: "↪", label: "Retur Pembelian" }, { href: "/retur-penjualan", icon: "↩", label: "Retur Penjualan" },
   ] },
   { label: "Produk", items: [
-    { href: "/produk", icon: "▦", label: "Data Produk" }, { href: "/produk#kategori", icon: "▧", label: "Kategori Produk" },
-    { href: "/produk#edit", icon: "✎", label: "Edit Produk" }, { href: "/produk#level-harga", icon: "◇", label: "Level Harga" },
+    { href: "/produk", icon: "▦", label: "Data Produk" }, { href: "/produk/kategori", icon: "▧", label: "Kategori Produk" },
+    { href: "/produk/level-harga", icon: "◇", label: "Level Harga" },
     { href: "/produk#diskon", icon: "%", label: "Diskon Produk" },
   ] },
   { label: "Inventori", items: [
     { href: "/stok", icon: "◫", label: "Data Stok" }, { href: "/stok#stok-masuk", icon: "⇧", label: "Stok Masuk" },
     { href: "/stok#stok-keluar", icon: "⇩", label: "Stok Keluar" }, { href: "/stok#penyesuaian", icon: "±", label: "Penyesuaian Stok" },
-    { href: "/stok#riwayat", icon: "◷", label: "Riwayat Stok" }, { href: "/stok#menipis", icon: "!", label: "Stok Menipis" },
+    { href: "/stok/riwayat", icon: "◷", label: "Riwayat Stok" }, { href: "/stok#menipis", icon: "!", label: "Stok Menipis" }, 
   ] },
   { label: "Kontak", items: [
     { href: "/kontak", icon: "◎", label: "Customer & Supplier" }, { href: "/kontak#customer", icon: "●", label: "Data Customer" },
@@ -63,6 +63,8 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
   const [profileOpen, setProfileOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [avatarSaving, setAvatarSaving] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const darkMode = useSyncExternalStore(
     (onStoreChange) => {
       window.addEventListener("kasir-toko-theme-change", onStoreChange);
@@ -126,6 +128,16 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
         setOperator(data.operator);
       }
     }).catch(() => undefined);
+  }, [publicPage]);
+
+  useEffect(() => {
+    if (publicPage) return;
+    const loadNotifications = () => fetch("/api/notifications").then(async (response) => {
+      if (response.ok) setNotifications((await response.json()).notifications || []);
+    }).catch(() => undefined);
+    void loadNotifications();
+    const timer = window.setInterval(loadNotifications, 60_000);
+    return () => window.clearInterval(timer);
   }, [publicPage]);
 
   useEffect(() => {
@@ -257,11 +269,15 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 3 6.5 6.5-2.2 2.2-1.8-1.8-3.7 3.7 1.8 1.8-2.2 2.2-6.5-6.5 2.2-2.2 1.8 1.8 3.7-3.7-1.8-1.8L14.5 3Z" /><path d="m10.8 13.2-7.3 7.3M3.5 20.5l3 .1" /></svg>
           </button>
         )}
-        <button className="header-notification" type="button" aria-label="Notifikasi" title="Notifikasi">
+        <div className="notification-wrap">
+        <button className="header-notification" type="button" aria-label="Notifikasi" title="Notifikasi" onClick={() => setNotificationsOpen((open) => !open)}>
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
           </svg>
+          {notifications.length > 0 && <span className="notification-count">{notifications.length > 99 ? "99+" : notifications.length}</span>}
         </button>
+        {notificationsOpen && <div className="notification-panel" role="dialog" aria-label="Daftar notifikasi"><div className="notification-panel-header"><b>Notifikasi</b><small>Jatuh tempo ≤ 7 hari</small></div>{notifications.length ? notifications.map((notification) => <Link href={notification.href} className={`notification-item notification-${notification.severity.toLowerCase()}`} key={notification.id} onClick={() => setNotificationsOpen(false)}><span className="notification-dot" /><span><b>{notification.title}</b><small>{notification.description}</small></span></Link>) : <p className="notification-empty">Tidak ada peringatan saat ini.</p>}</div>}
+        </div>
         <button className="theme-toggle theme-toggle-header" type="button" onClick={toggleTheme} title={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"} aria-label={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"}>
           <span aria-hidden="true">{darkMode ? "☀" : "☾"}</span>
         </button>

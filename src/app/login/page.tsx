@@ -44,8 +44,8 @@ function LoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Login gagal.");
+      const data = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) throw new Error(data?.error || `Login gagal (HTTP ${response.status}).`);
       router.push("/dashboard");
       router.refresh();
     } catch (err) {

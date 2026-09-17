@@ -24,12 +24,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const name = typeof input.name === "string" ? input.name.trim() : "";
   const sku = typeof input.sku === "string" ? input.sku.trim() : "";
   const unit = typeof input.unit === "string" ? input.unit.trim() : "";
+  const imageUrl = typeof input.imageUrl === "string" && input.imageUrl.trim() ? input.imageUrl.trim() : null;
   const price = input.price;
+  const costPrice = input.costPrice;
   const stock = input.stock;
   const categoryId = input.categoryId;
   const category = typeof input.category === "string" ? input.category : "";
   const discountPercent = input.discountPercent === undefined ? 0 : input.discountPercent;
-  if (!name || !sku || !unit || !Number.isInteger(price) || (price as number) < 0 || !Number.isInteger(stock) || (stock as number) < 0 || typeof discountPercent !== "number" || discountPercent < 0 || discountPercent > 100 || (!Number.isInteger(categoryId) && !legacyCategories.has(category as Category))) {
+  if (!name || !sku || !unit || !Number.isInteger(price) || (price as number) < 0 || !Number.isInteger(costPrice) || (costPrice as number) < 0 || (price as number) < (costPrice as number) || !Number.isInteger(stock) || (stock as number) < 0 || typeof discountPercent !== "number" || discountPercent < 0 || discountPercent > 100 || (!Number.isInteger(categoryId) && !legacyCategories.has(category as Category))) {
     return NextResponse.json({ error: "Data produk tidak valid" }, { status: 400 });
   }
   const categoryRecord = Number.isInteger(categoryId) ? await prisma.productCategory.findUnique({ where: { id: categoryId as number } }) : null;
@@ -37,7 +39,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const product = await prisma.product.update({
       where: { id },
-      data: { name, sku, unit, price: price as number, discountPercent, stock: stock as number, category: categoryRecord?.legacyCategory ?? category as Category, categoryId: categoryRecord?.id ?? null },
+      data: { name, sku, unit, imageUrl, price: price as number, defaultPrice: price as number, costPrice: costPrice as number, discountPercent, stock: stock as number, category: categoryRecord?.legacyCategory ?? category as Category, categoryId: categoryRecord?.id ?? null },
       include: { categoryRef: true },
     });
     return NextResponse.json(product);

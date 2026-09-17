@@ -8,6 +8,30 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
+export async function DELETE(request: NextRequest) {
+  const { getCurrentOperator } = await import("@/lib/auth");
+  const operator = await getCurrentOperator();
+  if (!operator || !["ADMIN", "OWNER"].includes(operator.role)) return NextResponse.json({ error: "Anda tidak memiliki izin menghapus transaksi" }, { status: 403 });
+  const id = Number(request.nextUrl.searchParams.get("id"));
+  if (!Number.isInteger(id) || id <= 0) return NextResponse.json({ error: "Transaksi tidak valid" }, { status: 400 });
+  try {
+    await prisma.$transaction(async (tx) => {
+      const sale = await tx.sale.findUnique({ where: { id }, include: { items: true, returns: { select: { id: true } } } });
+      if (!sale) throw new Error("Transaksi tidak ditemukan");
+      if (sale.returns.length) throw new Error("Transaksi yang memiliki retur tidak dapat dihapus");
+      for (const item of sale.items) {
+        await tx.product.update({ where: { id: item.productId }, data: { stock: { increment: item.quantity } } });
+      }
+      await tx.sale.delete({ where: { id } });
+    });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Transaksi gagal dihapus";
+    if (message.includes("tidak ditemukan") || message.includes("memiliki retur")) return NextResponse.json({ error: message }, { status: 400 });
+    return NextResponse.json({ error: "Transaksi gagal dihapus" }, { status: 500 });
+  }
+}
+
 export async function GET() {
   try {
     const { getCurrentOperator } = await import("@/lib/auth");
@@ -33,6 +57,7 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Body JSON tidak valid" }, { status: 400 });
   }
+
   if (!isRecord(body) || !Array.isArray(body.items) || !body.items.length || typeof body.paymentMethod !== "string" || !paymentMethods.has(body.paymentMethod as PaymentMethod)) {
     return NextResponse.json({ error: "paymentMethod dan items wajib valid" }, { status: 400 });
   }
@@ -47,12 +72,13 @@ export async function POST(request: NextRequest) {
 
   try {
     const sale = await prisma.$transaction(async (tx) => {
-      const products = await tx.product.findMany({ where: { id: { in: [...merged.keys()] } } });
+      const products = await tx.product.findMany({ where: { id: { in: [...merged.keys()] } }, include: { priceLevels: true } });
       if (products.length !== merged.size) throw new Error("Produk tidak ditemukan");
       const items = products.map((product) => {
         const quantity = merged.get(product.id) as number;
         if (product.stock < quantity) throw new Error(`Stok tidak cukup untuk ${product.name}`);
-        const unitPrice = Math.round(product.price * (1 - product.discountPercent / 100));
+        const tier = product.priceLevels.filter((level) => level.minQuantity <= quantity).sort((a, b) => b.minQuantity - a.minQuantity)[0];
+        const unitPrice = tier?.price ?? Math.round(product.price * (1 - product.discountPercent / 100));
         return { product, quantity, unitPrice, total: unitPrice * quantity };
       });
       const subtotal = items.reduce((sum, item) => sum + item.total, 0);

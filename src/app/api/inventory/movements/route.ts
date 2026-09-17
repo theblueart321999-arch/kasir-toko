@@ -13,7 +13,7 @@ export async function GET() {
   }
   try {
     const movements = await prisma.stockMovement.findMany({
-      include: { product: true, operator: { select: { id: true, name: true, username: true } } },
+      include: { product: { include: { categoryRef: true } }, operator: { select: { id: true, name: true, username: true } } },
       orderBy: { createdAt: "desc" },
       take: 100,
     });
@@ -39,10 +39,11 @@ export async function POST(request: NextRequest) {
   const input = body as Record<string, unknown>;
   const productId = input.productId;
   const quantity = input.quantity;
+  const targetStock = input.targetStock;
   const type = input.type;
   const note = typeof input.note === "string" ? input.note.trim() : null;
   const reference = typeof input.reference === "string" ? input.reference.trim() : null;
-  if (!Number.isInteger(productId) || !Number.isInteger(quantity) || (quantity as number) <= 0 || typeof type !== "string" || !movementTypes.has(type as StockMovementType)) {
+  if (!Number.isInteger(productId) || typeof type !== "string" || !movementTypes.has(type as StockMovementType) || (type === StockMovementType.ADJUSTMENT ? (!Number.isInteger(targetStock) || (targetStock as number) < 0 || !note) : (!Number.isInteger(quantity) || (quantity as number) <= 0))) {
     return NextResponse.json({ error: "productId, type, dan quantity positif wajib valid" }, { status: 400 });
   }
 
@@ -50,7 +51,11 @@ export async function POST(request: NextRequest) {
     const movement = await prisma.$transaction(async (tx) => {
       const product = await tx.product.findUnique({ where: { id: productId as number } });
       if (!product) throw new Error("Produk tidak ditemukan");
-      const delta = type === StockMovementType.OUT ? -(quantity as number) : quantity as number;
+      const delta = type === StockMovementType.ADJUSTMENT
+        ? (targetStock as number) - product.stock
+        : type === StockMovementType.OUT ? -(quantity as number) : quantity as number;
+      const movementQuantity = type === StockMovementType.ADJUSTMENT ? Math.abs(delta) : quantity as number;
+      if (type === StockMovementType.ADJUSTMENT && delta === 0) throw new Error("Jumlah stok tidak berubah");
       const afterStock = product.stock + delta;
       if (afterStock < 0) throw new Error(`Stok tidak cukup untuk ${product.name}`);
       const updated = await tx.product.updateMany({
@@ -61,9 +66,9 @@ export async function POST(request: NextRequest) {
       return tx.stockMovement.create({
         data: {
           productId: product.id, operatorId: operator.id, type: type as StockMovementType,
-          quantity: quantity as number, beforeStock: product.stock, afterStock, note, reference,
+          quantity: movementQuantity, beforeStock: product.stock, afterStock, note, reference,
         },
-        include: { product: true, operator: { select: { id: true, name: true, username: true } } },
+        include: { product: { include: { categoryRef: true } }, operator: { select: { id: true, name: true, username: true } } },
       });
     });
     return NextResponse.json(movement, { status: 201 });

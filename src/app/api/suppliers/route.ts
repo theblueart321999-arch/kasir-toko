@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   const operator = await getCurrentOperator();
   if (!operator || !canManage(operator.role)) return NextResponse.json({ error: "Anda tidak memiliki izin mengelola supplier" }, { status: 403 });
   const data = inputOf(await request.json().catch(() => null));
-  if (!data?.name) return NextResponse.json({ error: "Nama supplier wajib diisi" }, { status: 400 });
+  if (!data?.name || !data.phone || !data.email || !data.address) return NextResponse.json({ error: "Nama, nomor telepon, email, dan alamat supplier wajib diisi" }, { status: 400 });
   try { return NextResponse.json(await prisma.supplier.create({ data }), { status: 201 }); }
   catch (error) { if (error && typeof error === "object" && "code" in error && error.code === "P2002") return NextResponse.json({ error: "Nomor telepon atau email sudah terdaftar" }, { status: 409 }); return NextResponse.json({ error: "Supplier gagal dibuat" }, { status: 500 }); }
 }

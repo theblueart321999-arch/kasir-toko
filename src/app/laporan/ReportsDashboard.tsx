@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import SalesChart, { type Period } from "../dashboard/SalesChart";
+import Pagination, { paginate } from "@/components/Pagination";
 
 const rupiah = (value: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value);
 type Row = { date: string; total: number };
@@ -19,10 +20,12 @@ type Summary = {
 
 const today = new Date().toISOString().slice(0, 10);
 function DetailTable({ rows, type }: { rows: Row[]; type: "sale" | "purchase" }) {
-  return <div className="panel-table report-detail-table"><h2>Transaksi {type === "sale" ? "Penjualan" : "Pembelian"}</h2><table><thead><tr><th>Tanggal</th>{type === "sale" && <th>Laba</th>}<th>Nilai</th></tr></thead><tbody>{rows.map((row) => <tr key={`${type}-${row.date}`}><td>{new Intl.DateTimeFormat("id-ID").format(new Date(`${row.date}T00:00:00`))}</td>{type === "sale" && <td className="profit-cell">{rupiah(row.total * 0.4)}</td>}<td>{rupiah(row.total)}</td></tr>)}<tr className="total-row"><th>Jumlah</th>{type === "sale" && <th>{rupiah(rows.reduce((sum, row) => sum + row.total * 0.4, 0))}</th>}<th>{rupiah(rows.reduce((sum, row) => sum + row.total, 0))}</th></tr></tbody></table></div>;
+  const [page, setPage] = useState(1); const [pageSize, setPageSize] = useState(10); const visible = paginate(rows, page, pageSize);
+  return <div className="panel-table report-detail-table"><h2>Transaksi {type === "sale" ? "Penjualan" : "Pembelian"}</h2><table><thead><tr><th>Tanggal</th>{type === "sale" && <th>Laba</th>}<th>Nilai</th></tr></thead><tbody>{visible.map((row) => <tr key={`${type}-${row.date}`}><td>{new Intl.DateTimeFormat("id-ID").format(new Date(`${row.date}T00:00:00`))}</td>{type === "sale" && <td className="profit-cell">{rupiah(row.total * 0.4)}</td>}<td>{rupiah(row.total)}</td></tr>)}<tr className="total-row"><th>Jumlah</th>{type === "sale" && <th>{rupiah(rows.reduce((sum, row) => sum + row.total * 0.4, 0))}</th>}<th>{rupiah(rows.reduce((sum, row) => sum + row.total, 0))}</th></tr></tbody></table><Pagination page={page} pageSize={pageSize} total={rows.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} /></div>;
 }
 function RankingTable({ title, rows, quantity }: { title: string; rows: Ranking[]; quantity?: boolean }) {
-  return <div className="panel-table ranking-table"><h2>{title}</h2><table><thead><tr><th>No</th><th>Nama</th>{quantity ? <th>Jml</th> : null}<th>Nilai</th></tr></thead><tbody>{rows.map((row, index) => <tr key={row.name}><td>{index + 1}</td><td>{row.name}</td>{quantity ? <td>{Math.round(row.total / 40000)}</td> : null}<td>{rupiah(row.total)}</td></tr>)}{!rows.length && <tr><td colSpan={quantity ? 4 : 3}>Belum ada data</td></tr>}</tbody></table></div>;
+  const [page, setPage] = useState(1); const [pageSize, setPageSize] = useState(10); const visible = paginate(rows, page, pageSize);
+  return <div className="panel-table ranking-table"><h2>{title}</h2><table><thead><tr><th>No</th><th>Nama</th>{quantity ? <th>Jml</th> : null}<th>Nilai</th></tr></thead><tbody>{visible.map((row, index) => <tr key={row.name}><td>{(page - 1) * pageSize + index + 1}</td><td>{row.name}</td>{quantity ? <td>{Math.round(row.total / 40000)}</td> : null}<td>{rupiah(row.total)}</td></tr>)}{!rows.length && <tr><td colSpan={quantity ? 4 : 3}>Belum ada data</td></tr>}</tbody></table><Pagination page={page} pageSize={pageSize} total={rows.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} /></div>;
 }
 
 export default function ReportsDashboard() {

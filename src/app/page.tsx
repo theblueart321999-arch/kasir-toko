@@ -1,14 +1,16 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import Pagination, { paginate } from "@/components/Pagination";
 
-type Category = "Semua" | "Bangunan" | "Pertanian";
+type Category = "Semua" | string;
+type CategoryRecord = { id: number; name: string };
 
 type Product = {
   id: number;
   name: string;
   sku: string;
-  category: Exclude<Category, "Semua">;
+  category: string;
   price: number;
   discountPercent?: number;
   stock: number;
@@ -33,12 +35,15 @@ const fallbackProducts: Product[] = [
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value);
 
-type ApiProduct = Omit<Product, "category" | "color" | "icon"> & { category: "BANGUNAN" | "PERTANIAN" };
+type ApiProduct = Omit<Product, "category" | "color" | "icon"> & {
+  category: string;
+  categoryRef?: CategoryRecord | null;
+};
 
 function normalizeProducts(data: ApiProduct[]): Product[] {
   return data.map((product, index) => ({
     ...product,
-    category: product.category === "BANGUNAN" ? "Bangunan" : "Pertanian",
+    category: product.categoryRef?.name || (product.category === "BANGUNAN" ? "Bangunan" : product.category === "PERTANIAN" ? "Pertanian" : product.category),
     color: fallbackProducts[index % fallbackProducts.length].color,
     icon: fallbackProducts[index % fallbackProducts.length].icon,
   }));
@@ -46,6 +51,7 @@ function normalizeProducts(data: ApiProduct[]): Product[] {
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>(fallbackProducts);
+  const [categories, setCategories] = useState<string[]>([]);
   const [category, setCategory] = useState<Category>("Semua");
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<Record<number, number>>({});
@@ -59,21 +65,39 @@ export default function Home() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editForm, setEditForm] = useState<ProductEditForm | null>(null);
   const [savingProduct, setSavingProduct] = useState(false);
+  const [operatorName, setOperatorName] = useState("");
+  const [productPage, setProductPage] = useState(1);
+  const [productPageSize, setProductPageSize] = useState(10);
 
   useEffect(() => {
     let active = true;
-    fetch("/api/products")
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Database belum tersedia");
-        return normalizeProducts((await response.json()) as ApiProduct[]);
+    Promise.all([fetch("/api/products"), fetch("/api/categories")])
+      .then(async ([productsResponse, categoriesResponse]) => {
+        if (!productsResponse.ok) throw new Error("Database belum tersedia");
+        const apiProducts = (await productsResponse.json()) as ApiProduct[];
+        const apiCategories = categoriesResponse.ok ? (await categoriesResponse.json()) as CategoryRecord[] : [];
+        const products = normalizeProducts(apiProducts);
+        return { products, categories: apiCategories.length ? apiCategories.map((item) => item.name) : [...new Set(products.map((item) => item.category))] };
       })
       .then((data) => {
-        if (active && data.length) setProducts(data);
+        if (!active) return;
+        if (data.products.length) setProducts(data.products);
+        setCategories(data.categories);
       })
       .catch(() => undefined);
     return () => {
       active = false;
     };
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then(async (response) => {
+        if (!response.ok) return;
+        const data = await response.json() as { operator?: { name?: string } };
+        if (typeof data.operator?.name === "string") setOperatorName(data.operator.name);
+      })
+      .catch(() => undefined);
   }, []);
 
   const visibleProducts = useMemo(
@@ -85,6 +109,10 @@ export default function Home() {
       }),
     [category, products, query],
   );
+  const paginatedProducts = paginate(visibleProducts, productPage, productPageSize);
+  useEffect(() => {
+    setProductPage(1);
+  }, [category, query, productPageSize]);
 
   const cartItems = products.filter((product) => cart[product.id]);
   const subtotal = cartItems.reduce((total, product) => total + Math.round(product.price * (1 - (product.discountPercent || 0) / 100)) * cart[product.id], 0);
@@ -193,17 +221,17 @@ export default function Home() {
     <main className="app-shell">
       <section className="workspace" id="kasir">
         <header className="topbar">
-          <div><p className="eyebrow">RABU, 16 SEPTEMBER 2026</p><h1>Selamat datang, Andi <span>✦</span></h1></div>
+          <div><p className="eyebrow">RABU, 16 SEPTEMBER 2026</p><h1>Selamat datang{operatorName ? `, ${operatorName}` : ""} <span>✦</span></h1></div>
         </header>
         <div className="content-grid">
           <section className="catalog">
             <div className="section-heading"><div><h2>Mulai Transaksi</h2><p>Pilih produk untuk ditambahkan ke keranjang</p></div><button className="scan-button">⌁ &nbsp; Scan Barcode</button></div>
             <div className="toolbar">
               <div className="search-box"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari nama produk atau SKU..." /><kbd>⌘ K</kbd></div>
-              <div className="categories">{(["Semua", "Bangunan", "Pertanian"] as Category[]).map((item) => <button key={item} className={category === item ? "selected" : ""} onClick={() => setCategory(item)}>{item}</button>)}</div>
+              <div className="categories">{["Semua", ...categories].map((item) => <button key={item} className={category === item ? "selected" : ""} onClick={() => setCategory(item)}>{item}</button>)}</div>
             </div>
             <div className="product-grid">
-              {visibleProducts.map((product) => <article className="product-card" key={product.id} onClick={() => addToCart(product)}>
+              {paginatedProducts.map((product) => <article className="product-card" key={product.id} onClick={() => addToCart(product)}>
                 <div className={`product-illustration ${product.color}`}>
                   <button className="product-edit-button" aria-label={`Edit ${product.name}`} onClick={(event) => { event.stopPropagation(); openProductEdit(product); }}>Edit</button>
                   <span>{product.icon}</span><em>{product.category}</em>
@@ -213,6 +241,7 @@ export default function Home() {
               </article>)}
             </div>
             {!visibleProducts.length && <div className="empty-state">Produk tidak ditemukan. Coba kata kunci lain.</div>}
+            <Pagination page={productPage} pageSize={productPageSize} total={visibleProducts.length} onPageChange={setProductPage} onPageSizeChange={(size) => { setProductPageSize(size); setProductPage(1); }} />
           </section>
 
           <aside className={`cart-panel ${showCart ? "cart-panel-open" : ""}`}>

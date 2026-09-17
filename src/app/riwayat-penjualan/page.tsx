@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import Pagination, { paginate } from "@/components/Pagination";
 
 type Sale = {
   id: number;
@@ -39,6 +40,9 @@ export default function RiwayatPenjualanPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     fetch("/api/sales")
@@ -55,14 +59,22 @@ export default function RiwayatPenjualanPage() {
     if (!normalizedQuery) return sales;
     return sales.filter((sale) => sale.invoiceNumber.toLowerCase().includes(normalizedQuery));
   }, [query, sales]);
+  useEffect(() => { setPage(1); }, [query]);
+  const pagedSales = useMemo(() => paginate(visibleSales, page, pageSize), [visibleSales, page, pageSize]);
+  async function deleteSale(sale: Sale) {
+    const response = await fetch(`/api/sales?id=${sale.id}`, { method: "DELETE" });
+    const result = await response.json();
+    if (!response.ok) { setError(result.error || "Transaksi gagal dihapus."); return; }
+    setSales((current) => current.filter((item) => item.id !== sale.id));
+  }
 
   return (
     <main className="sales-history-page">
       <header className="sales-history-header">
         <div>
           <p className="eyebrow">PENJUALAN</p>
-          <h1>Cetak Struk</h1>
-          <p className="sales-history-subtitle">Pilih transaksi untuk melihat atau mencetak struk penjualan.</p>
+          <h1>Riwayat Penjualan</h1>
+          <p className="sales-history-subtitle">Pilih transaksi untuk melihat detail atau mencetak struk penjualan.</p>
         </div>
         <Link href="/" className="secondary-button">Kembali ke kasir</Link>
       </header>
@@ -87,17 +99,18 @@ export default function RiwayatPenjualanPage() {
               <tr><th>Nomor invoice</th><th>Tanggal</th><th>Total</th><th>Metode pembayaran</th><th><span className="sr-only">Aksi</span></th></tr>
             </thead>
             <tbody>
-              {visibleSales.map((sale) => (
+              {pagedSales.map((sale) => (
                 <tr key={sale.id}>
                   <td data-label="Invoice"><strong>{sale.invoiceNumber}</strong></td>
                   <td data-label="Tanggal">{date(sale.createdAt)}</td>
                   <td data-label="Total"><strong>{currency(sale.total)}</strong></td>
                   <td data-label="Metode">{paymentLabels[sale.paymentMethod] || sale.paymentMethod}</td>
-                  <td className="sales-history-action"><button type="button" className="primary-button" onClick={() => setSelectedSale(sale)}>Lihat / Cetak</button></td>
+                  <td className="sales-history-action"><button type="button" className="primary-button" onClick={() => setSelectedSale(sale)}>Lihat / Cetak</button><button type="button" className="sales-history-delete" onClick={() => setSaleToDelete(sale)}>Hapus</button></td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <Pagination page={page} pageSize={pageSize} total={visibleSales.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} />
           {!loading && !visibleSales.length && <p className="empty-state sales-history-empty">{query ? "Transaksi tidak ditemukan." : "Belum ada transaksi penjualan."}</p>}
         </div>
       </section>
@@ -113,6 +126,13 @@ export default function RiwayatPenjualanPage() {
             <div className="receipt-preview-total"><span>Subtotal</span><b>{currency(selectedSale.subtotal)}</b><span>Pajak</span><b>{currency(selectedSale.tax)}</b><strong>Total</strong><strong>{currency(selectedSale.total)}</strong></div>
           </div>
           <div className="form-actions"><button type="button" className="modal-cancel" onClick={() => setSelectedSale(null)}>Tutup</button><Link href={`/struk/${selectedSale.id}`} target="_blank" className="primary-button">Cetak struk</Link></div>
+        </section>
+      </div>}
+      {saleToDelete && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setSaleToDelete(null); }}>
+        <section className="receipt-success-modal delete-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="delete-sale-title">
+          <div className="modal-heading"><div><p className="eyebrow">KONFIRMASI</p><h2 id="delete-sale-title">Hapus transaksi?</h2></div><button type="button" className="modal-close" onClick={() => setSaleToDelete(null)} aria-label="Tutup">×</button></div>
+          <p className="receipt-success-message">Transaksi <b>{saleToDelete.invoiceNumber}</b> akan dihapus dan stok produk akan dikembalikan. Tindakan ini tidak dapat dibatalkan.</p>
+          <div className="form-actions"><button type="button" className="secondary-button" onClick={() => setSaleToDelete(null)}>Batal</button><button type="button" className="sales-history-delete" onClick={() => { const sale = saleToDelete; setSaleToDelete(null); void deleteSale(sale); }}>Hapus transaksi</button></div>
         </section>
       </div>}
     </main>

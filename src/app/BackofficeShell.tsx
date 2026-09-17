@@ -119,6 +119,16 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
   }, [publicPage]);
 
   useEffect(() => {
+    function refreshOperator() {
+      fetch("/api/auth/me").then(async (response) => {
+        if (response.ok) setOperator((await response.json()).operator);
+      }).catch(() => undefined);
+    }
+    window.addEventListener("kasir-toko-profile-change", refreshOperator);
+    return () => window.removeEventListener("kasir-toko-profile-change", refreshOperator);
+  }, []);
+
+  useEffect(() => {
     if (publicPage) return;
     fetch("/api/settings/store").then(async (response) => {
       if (response.ok) {
@@ -216,7 +226,7 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
               title="Buka menu akun"
             >
               <div className="backoffice-avatar">
-                {operator?.avatarUrl ? <img src={operator.avatarUrl} alt="" /> : (operator?.name?.slice(0, 2).toUpperCase() || "TB")}
+                {operator?.avatarUrl ? <span role="img" aria-label="" style={{ backgroundImage: `url(${operator.avatarUrl})` }} /> : (operator?.name?.slice(0, 2).toUpperCase() || "TB")}
               </div>
               <span><b>{operator?.name || "Operator"}</b><small>{operator?.role || "Memuat..."}</small></span>
             </button>

@@ -6,6 +6,18 @@ import { createSession } from "@/lib/auth";
 import { getGoogleOAuthConfig } from "@/lib/google-oauth";
 
 type GoogleProfile = { sub?: string; email?: string; name?: string; picture?: string };
+type GoogleToken = { access_token?: string; id_token?: string };
+
+function getIdTokenProfile(idToken?: string): GoogleProfile {
+  if (!idToken) return {};
+  try {
+    const payload = idToken.split(".")[1];
+    if (!payload) return {};
+    return JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as GoogleProfile;
+  } catch {
+    return {};
+  }
+}
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -20,11 +32,11 @@ export async function GET(request: Request) {
   try {
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ code, client_id: config.clientId, client_secret: config.clientSecret, redirect_uri: config.redirectUri, grant_type: "authorization_code" }) });
     if (!tokenResponse.ok) throw new Error("Google token exchange failed");
-    const token = await tokenResponse.json() as { access_token?: string };
+    const token = await tokenResponse.json() as GoogleToken;
     if (!token.access_token) throw new Error("Google access token missing");
     const profileResponse = await fetch("https://openidconnect.googleapis.com/v1/userinfo", { headers: { Authorization: `Bearer ${token.access_token}` } });
     if (!profileResponse.ok) throw new Error("Google profile lookup failed");
-    const profile = await profileResponse.json() as GoogleProfile;
+    const profile = { ...getIdTokenProfile(token.id_token), ...await profileResponse.json() as GoogleProfile };
     if (!profile.sub || !profile.email) throw new Error("Google profile incomplete");
     const email = profile.email.toLowerCase();
     let operator = await prisma.operator.findFirst({ where: { googleId: profile.sub } });

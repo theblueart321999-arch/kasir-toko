@@ -4,12 +4,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
-type Operator = { name: string; role: string; avatarUrl?: string | null };
+type Operator = { id: number; name: string; email?: string | null; username: string; role: string; avatarUrl?: string | null };
 const groups = [
   { label: "Navigasi", items: [
     { href: "/dashboard", icon: "⌂", label: "Dashboard" }, { href: "/", icon: "▣", label: "Kasir" },
     { href: "/#riwayat-penjualan", icon: "↗", label: "Riwayat Penjualan" }, { href: "/#detail-pembayaran", icon: "▤", label: "Detail Pembayaran" },
-    { href: "/laporan#cetak-struk", icon: "▥", label: "Cetak Struk" },
+    { href: "/riwayat-penjualan", icon: "▥", label: "Cetak Struk" },
   ] },
   { label: "Transaksi", items: [
     { href: "/pembelian", icon: "⇩", label: "Pembelian Baru" }, { href: "/pembelian#riwayat", icon: "◷", label: "Riwayat Pembelian" },
@@ -60,6 +60,9 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
   const [operator, setOperator] = useState<Operator | null>(null);
   const [collapsed, setCollapsed] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [avatarSaving, setAvatarSaving] = useState(false);
   const darkMode = useSyncExternalStore(
     (onStoreChange) => {
       window.addEventListener("kasir-toko-theme-change", onStoreChange);
@@ -156,7 +159,47 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
     router.refresh();
   }
 
+  async function changeAvatar(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 1_500_000) {
+      window.alert("Pilih foto JPG, PNG, atau WebP maksimal 1,5 MB.");
+      return;
+    }
+    const avatarUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error());
+      reader.onerror = () => reject(new Error());
+      reader.readAsDataURL(file);
+    }).catch(() => "");
+    if (!avatarUrl) return;
+    setAvatarSaving(true);
+    try {
+      const response = await fetch("/api/auth/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatarUrl }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Foto profil gagal disimpan.");
+      setOperator(data.operator);
+      window.dispatchEvent(new Event("kasir-toko-profile-change"));
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Foto profil gagal disimpan.");
+    } finally {
+      setAvatarSaving(false);
+    }
+  }
+
   function minimizeSidebar() {
+    setUserMenuOpen(false);
+    if (pinned) return;
+    setCollapsed(true);
+    window.localStorage.setItem("tanibangun-sidebar-collapsed", "true");
+  }
+
+  function closeSidebarAfterBrandClick() {
     setUserMenuOpen(false);
     if (pinned) return;
     setCollapsed(true);
@@ -170,14 +213,10 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
     if (next) {
       setCollapsed(false);
       window.localStorage.setItem("tanibangun-sidebar-collapsed", "false");
+    } else {
+      setCollapsed(true);
+      window.localStorage.setItem("tanibangun-sidebar-collapsed", "true");
     }
-  }
-
-  function handleBrandClick(event: React.MouseEvent<HTMLAnchorElement>) {
-    event.preventDefault();
-    const next = !collapsed;
-    setCollapsed(next);
-    window.localStorage.setItem("tanibangun-sidebar-collapsed", String(next));
   }
 
   function isActive(href: string) {
@@ -190,7 +229,7 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
   if (publicPage) return children;
 
   return (
-    <div className={`backoffice-layout ${sidebarIsCollapsed ? "sidebar-collapsed" : ""}`}>
+    <div className={`backoffice-layout ${sidebarIsCollapsed ? "sidebar-collapsed" : ""} ${pinned ? "sidebar-pinned" : ""}`}>
       <header ref={globalHeaderRef} className="backoffice-global-header">
         <button
           className="sidebar-toggle"
@@ -209,15 +248,37 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
             <rect className="sidebar-toggle-line" x="3" y="17" width="18" height="3" rx="1.5" />
           </svg>
         </button>
-        <Link className="backoffice-brand" href="/dashboard" title="Dashboard">
+        <Link className="backoffice-brand" href="/dashboard" onClick={closeSidebarAfterBrandClick} title="Dashboard">
           <span className="backoffice-brand-mark" aria-hidden="true"><i>K</i><i>T</i></span>
           <span className="backoffice-brand-name"><b>Kasir Toko</b></span>
         </Link>
-        <button className={`sidebar-pin ${pinned ? "active" : ""}`} type="button" onClick={togglePinned} aria-label={pinned ? "Lepas pin sidebar" : "Pin sidebar"} title={pinned ? "Lepas pin sidebar" : "Pin sidebar"}>⌖</button>
+        {pinned && (
+          <button className="sidebar-pin active" type="button" onClick={togglePinned} aria-label="Lepas pin sidebar" title="Lepas pin sidebar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 3 6.5 6.5-2.2 2.2-1.8-1.8-3.7 3.7 1.8 1.8-2.2 2.2-6.5-6.5 2.2-2.2 1.8 1.8 3.7-3.7-1.8-1.8L14.5 3Z" /><path d="m10.8 13.2-7.3 7.3M3.5 20.5l3 .1" /></svg>
+          </button>
+        )}
+        <button className="header-notification" type="button" aria-label="Notifikasi" title="Notifikasi">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
+          </svg>
+        </button>
+        <button className="theme-toggle theme-toggle-header" type="button" onClick={toggleTheme} title={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"} aria-label={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"}>
+          <span aria-hidden="true">{darkMode ? "☀" : "☾"}</span>
+        </button>
+        <div className="backoffice-header-account">
+          <button className="backoffice-user" type="button" aria-expanded={userMenuOpen} aria-haspopup="menu" onClick={() => setUserMenuOpen((open) => !open)} title="Buka menu akun">
+            <div className="backoffice-avatar">{operator?.avatarUrl ? <img src={operator.avatarUrl} alt="" referrerPolicy="no-referrer" /> : (operator?.name?.slice(0, 2).toUpperCase() || "TB")}</div>
+            <span><b>{operator?.name || "Operator"}</b><small>{operator?.role || "Memuat..."}</small></span>
+          </button>
+          {userMenuOpen && <div className="backoffice-account-menu" role="menu">
+            <button type="button" onClick={() => { setProfileOpen(true); setUserMenuOpen(false); }} role="menuitem"><span>◉</span>Profil Saya</button>
+            <button type="button" onClick={() => { setLogoutConfirmOpen(true); setUserMenuOpen(false); }} role="menuitem"><span>↪</span>Keluar</button>
+          </div>}
+        </div>
       </header>
       <div className="backoffice-body">
         <aside ref={sidebarRef} className="backoffice-sidebar" aria-label="Sidebar navigasi">
-          <div className="backoffice-sidebar-header">
+          <div className={`backoffice-sidebar-header ${pinned ? "sidebar-header-pinned" : ""}`}>
           <button
             className="sidebar-toggle"
             type="button"
@@ -235,10 +296,13 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
               <rect className="sidebar-toggle-line" x="3" y="17" width="18" height="3" rx="1.5" />
             </svg>
           </button>
-          <Link className="backoffice-brand" href="/dashboard" onClick={handleBrandClick} title={sidebarIsCollapsed ? "Buka sidebar" : "Tutup sidebar"}>
+          <Link className="backoffice-brand" href="/dashboard" onClick={closeSidebarAfterBrandClick} title="Dashboard">
             <span className="backoffice-brand-mark" aria-hidden="true"><i>K</i><i>T</i></span>
             <span className="backoffice-brand-name"><b>Kasir Toko</b></span>
           </Link>
+          <button className={`sidebar-pin ${pinned ? "active" : ""}`} type="button" onClick={togglePinned} aria-label={pinned ? "Lepas pin sidebar" : "Pin sidebar"} title={pinned ? "Lepas pin sidebar" : "Pin sidebar"}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 3 6.5 6.5-2.2 2.2-1.8-1.8-3.7 3.7 1.8 1.8-2.2 2.2-6.5-6.5 2.2-2.2 1.8 1.8 3.7-3.7-1.8-1.8L14.5 3Z" /><path d="m10.8 13.2-7.3 7.3M3.5 20.5l3 .1" /></svg>
+          </button>
             </div>
             <nav ref={navRef} className="backoffice-nav" aria-label="Menu aplikasi">
           {groups.map((group) => <div className="nav-group" key={group.label}>
@@ -251,34 +315,23 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
           </nav>
           <div className="backoffice-footer">
           <Link className={isActive("/pengaturan") ? "active" : ""} href="/pengaturan" ref={isActive("/pengaturan") ? activeLinkRef : undefined} title={sidebarIsCollapsed ? "Setting" : undefined} onClick={minimizeSidebar}><span>⚙</span><b><em>Setting</em><i>Setting</i></b></Link>
-          <div className="backoffice-user-menu">
-            <button
-              className="backoffice-user"
-              type="button"
-              aria-expanded={userMenuOpen}
-              aria-haspopup="menu"
-              onClick={() => setUserMenuOpen((open) => !open)}
-              title="Buka menu akun"
-            >
-              <div className="backoffice-avatar">
-                {operator?.avatarUrl ? <span role="img" aria-label="" style={{ backgroundImage: `url(${operator.avatarUrl})` }} /> : (operator?.name?.slice(0, 2).toUpperCase() || "TB")}
-              </div>
-              <span><b>{operator?.name || "Operator"}</b><small>{operator?.role || "Memuat..."}</small></span>
-            </button>
-            {userMenuOpen && (
-              <div className="backoffice-account-menu" role="menu">
-                <button type="button" onClick={logout} role="menuitem"><span>↪</span>Keluar</button>
-              </div>
-            )}
-          </div>
           </div>
         </aside>
         <section className="backoffice-content">
-          <button className="theme-toggle theme-toggle-top" type="button" onClick={toggleTheme} title={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"} aria-label={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"}>
-            <span aria-hidden="true">{darkMode ? "☀" : "☾"}</span>
-          </button>
           {children}
         </section>
+        {profileOpen && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setProfileOpen(false); }}>
+          <section className="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+            <div className="modal-heading"><div><p className="eyebrow">AKUN OPERATOR</p><h2 id="profile-title">Profil Saya</h2></div><button className="modal-close" type="button" onClick={() => setProfileOpen(false)} aria-label="Tutup">×</button></div>
+            <div className="profile-modal-body">
+              <div className="profile-avatar">{operator?.avatarUrl ? <img src={operator.avatarUrl} alt="" referrerPolicy="no-referrer" /> : (operator?.name?.slice(0, 2).toUpperCase() || "TB")}</div>
+              <div><h3>{operator?.name || "Operator"}</h3><p>Email / username: {operator?.email || operator?.username || "—"}</p><p>Peran: <b>{operator?.role || "—"}</b></p><label className="profile-upload">{avatarSaving ? "Menyimpan..." : "Ganti foto profil"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={changeAvatar} disabled={avatarSaving} /></label><small>JPG, PNG, atau WebP maksimal 1,5 MB.</small></div>
+            </div>
+          </section>
+        </div>}
+        {logoutConfirmOpen && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setLogoutConfirmOpen(false); }}>
+          <section className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="logout-title"><div className="modal-heading"><h2 id="logout-title">Keluar dari akun?</h2><button className="modal-close" type="button" onClick={() => setLogoutConfirmOpen(false)} aria-label="Tutup">×</button></div><p>Anda akan keluar dari sesi Kasir Toko.</p><div className="form-actions"><button className="modal-cancel" type="button" onClick={() => setLogoutConfirmOpen(false)}>Batal</button><button className="primary-button" type="button" onClick={logout}>Keluar</button></div></section>
+        </div>}
       </div>
     </div>
   );

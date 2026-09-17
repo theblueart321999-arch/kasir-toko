@@ -194,11 +194,6 @@ export default function Home() {
       <section className="workspace" id="kasir">
         <header className="topbar">
           <div><p className="eyebrow">RABU, 16 SEPTEMBER 2026</p><h1>Selamat datang, Andi <span>✦</span></h1></div>
-          <div className="top-actions">
-            <button className="icon-button" aria-label="Notifikasi" title="Notifikasi">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg><i />
-            </button>
-          </div>
         </header>
         <div className="content-grid">
           <section className="catalog">
@@ -254,7 +249,7 @@ export default function Home() {
           <div className="payment-detail-content">
             <div className="payment-order-card"><div><span>Ringkasan pesanan</span><b>{itemCount} item</b></div>{cartItems.map((product) => <div className="payment-order-line" key={product.id}><span>{product.name} <small>× {cart[product.id]}</small></span><b>{formatCurrency(Math.round(product.price * (1 - (product.discountPercent || 0) / 100)) * cart[product.id])}</b></div>)}<div className="payment-total-line"><span>Total pembayaran</span><strong>{formatCurrency(total)}</strong></div></div>
             <div className="payment-choice-card"><h3>Pilih metode pembayaran</h3><p>Metode pembayaran akan digunakan untuk transaksi ini.</p><div className="payment-method payment-method-floating">{["Tunai", "QRIS", "Debit"].map((method) => <button key={method} className={payment === method ? "active" : ""} onClick={() => setPayment(method)}><span>{method === "Tunai" ? "◉" : method === "QRIS" ? "▦" : "▤"}</span><b>{method}</b><small>{method === "Tunai" ? "Bayar di kasir" : method === "QRIS" ? "Scan kode QR" : "Kartu debit"}</small></button>)}</div>
-              {payment === "Tunai" && <div className="cash-form"><label>Uang diterima<input inputMode="numeric" value={cashReceived} onChange={(event) => setCashReceived(event.target.value.replace(/\D/g, ""))} placeholder="Masukkan nominal uang" /></label><div className="cash-change"><span>Kembalian</span><strong className={received < total ? "not-enough" : ""}>{received >= total ? formatCurrency(change) : "Uang belum cukup"}</strong></div></div>}
+              {payment === "Tunai" && <div className="cash-form"><label>Uang diterima<div className="cash-input-row"><input inputMode="numeric" value={cashReceived} onChange={(event) => setCashReceived(event.target.value.replace(/\D/g, ""))} placeholder="Masukkan nominal uang" /><button className="exact-cash-button" type="button" onClick={() => setCashReceived(String(total))}>Uang Pas</button></div></label><div className="cash-change"><span>Kembalian</span><strong className={received < total ? "not-enough" : ""}>{received >= total ? formatCurrency(change) : "Uang belum cukup"}</strong></div></div>}
               {payment === "QRIS" && <div className="payment-instruction"><span>▦</span><div><b>QRIS siap digunakan</b><p>Tampilkan kode QR saat konfirmasi pembayaran.</p></div></div>}
               {payment === "Debit" && <div className="payment-instruction"><span>▤</span><div><b>Mesin EDC</b><p>Pastikan pembayaran kartu berhasil sebelum konfirmasi.</p></div></div>}
             </div>
@@ -277,7 +272,14 @@ export default function Home() {
           <div className="form-actions"><button type="button" className="modal-cancel" onClick={() => { setEditingProduct(null); setEditForm(null); }}>Batal</button><button className="management-primary" disabled={savingProduct}>{savingProduct ? "Menyimpan..." : "Simpan perubahan"}</button></div>
         </form>
       </div>}
-      {notice && <div className="toast">✓ &nbsp; {notice}{receiptId && <a href={`/struk/${receiptId}`} target="_blank" rel="noreferrer"> Cetak struk</a>}</div>}
+      {notice && !receiptId && <div className="toast">✓ &nbsp; {notice}</div>}
+      {receiptId && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setReceiptId(null); }}>
+        <section className="receipt-success-modal" role="dialog" aria-modal="true" aria-labelledby="receipt-success-title">
+          <div className="modal-heading"><div><p className="eyebrow">TRANSAKSI BERHASIL</p><h2 id="receipt-success-title">Cetak struk sekarang?</h2></div><button className="modal-close" type="button" onClick={() => setReceiptId(null)} aria-label="Tutup">×</button></div>
+          <p className="receipt-success-message">{notice || "Transaksi berhasil disimpan."}</p>
+          <div className="form-actions"><button className="modal-cancel" type="button" onClick={() => setReceiptId(null)}>Tutup</button><a className="primary-button" href={`/struk/${receiptId}`} target="_blank" rel="noreferrer">Cetak struk</a></div>
+        </section>
+      </div>}
     </main>
   );
 }

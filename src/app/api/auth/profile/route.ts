@@ -17,7 +17,7 @@ export async function PATCH(request: Request) {
   const updated = await prisma.operator.update({
     where: { id: operator.id },
     data: { avatarUrl },
-    select: { id: true, name: true, username: true, role: true, avatarUrl: true },
+    select: { id: true, name: true, email: true, username: true, role: true, avatarUrl: true },
   });
   return NextResponse.json({ operator: updated });
 }

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 
 type ChartPoint = { key: string; label: string; dateLabel: string; total: number };
-type Period = "day" | "week" | "month" | "year" | "custom";
+export type Period = "day" | "week" | "month" | "year" | "custom";
+export type ChartRange = { from: string; to: string; group: string };
 
 function dateValue(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -23,16 +24,32 @@ function rangeFor(period: Period, customFrom: string, customTo: string) {
   };
 }
 
-export default function SalesChart({ initialPoints }: { initialPoints: ChartPoint[] }) {
+type SalesChartProps = {
+  initialPoints: ChartPoint[];
+  onRangeChange?: (range: ChartRange) => void;
+  rangeOverride?: ChartRange;
+  showControls?: boolean;
+  period?: Period;
+  customFrom?: string;
+  customTo?: string;
+  onPeriodChange?: (period: Period) => void;
+  onCustomRangeChange?: (from: string, to: string) => void;
+};
+
+export default function SalesChart({ initialPoints, onRangeChange, rangeOverride, showControls = true, period: controlledPeriod, customFrom: controlledFrom, customTo: controlledTo, onPeriodChange, onCustomRangeChange }: SalesChartProps) {
   const today = dateValue(new Date());
-  const [period, setPeriod] = useState<Period>("week");
-  const [customFrom, setCustomFrom] = useState(today);
-  const [customTo, setCustomTo] = useState(today);
+  const [internalPeriod, setInternalPeriod] = useState<Period>("week");
+  const [internalFrom, setInternalFrom] = useState(today);
+  const [internalTo, setInternalTo] = useState(today);
+  const period = controlledPeriod ?? internalPeriod;
+  const customFrom = controlledFrom ?? internalFrom;
+  const customTo = controlledTo ?? internalTo;
   const [points, setPoints] = useState(initialPoints);
 
   useEffect(() => {
-    const range = rangeFor(period, customFrom, customTo);
+    const range = rangeOverride ?? rangeFor(period, customFrom, customTo);
     if (period === "custom" && (!customFrom || !customTo || customFrom > customTo)) return;
+    onRangeChange?.(range);
     const controller = new AbortController();
     fetch(`/api/reports/sales-chart?from=${range.from}&to=${range.to}&group=${range.group}`, { signal: controller.signal })
       .then(async (response) => {
@@ -42,7 +59,7 @@ export default function SalesChart({ initialPoints }: { initialPoints: ChartPoin
       .then((data) => setPoints(data.points))
       .catch((error: unknown) => { if ((error as Error).name !== "AbortError") setPoints([]); })
     return () => controller.abort();
-  }, [period, customFrom, customTo]);
+  }, [period, customFrom, customTo, onRangeChange, rangeOverride]);
 
   const format = (value: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value);
   const max = Math.max(...points.map((point) => point.total), 1);
@@ -55,12 +72,12 @@ export default function SalesChart({ initialPoints }: { initialPoints: ChartPoin
         <div><h2 id="sales-chart-title">Grafik Penjualan</h2><p>Performa penjualan berdasarkan periode yang dipilih</p></div>
         <strong>{format(points.reduce((sum, point) => sum + point.total, 0))}</strong>
       </div>
-      <div className="chart-periods" role="group" aria-label="Periode grafik penjualan">
-        {([["day", "Hari ini"], ["week", "7 Hari"], ["month", "1 Bulan"], ["year", "1 Tahun"], ["custom", "Rentang"]] as [Period, string][]).map(([value, label]) => (
-          <button className={period === value ? "active" : ""} key={value} onClick={() => setPeriod(value)} type="button">{label}</button>
+      {showControls && <div className="chart-periods" role="group" aria-label="Periode grafik penjualan">
+        {([["day", "Hari ini"], ["week", "7 Hari"], ["month", "Bulanan"], ["year", "Tahunan"], ["custom", "Rentang"]] as [Period, string][]).map(([value, label]) => (
+          <button className={period === value ? "active" : ""} key={value} onClick={() => { setInternalPeriod(value); onPeriodChange?.(value); }} type="button">{label}</button>
         ))}
-      </div>
-      {period === "custom" && <div className="chart-custom-range"><label>Dari<input type="date" value={customFrom} onChange={(event) => setCustomFrom(event.target.value)} /></label><label>Sampai<input type="date" value={customTo} onChange={(event) => setCustomTo(event.target.value)} /></label></div>}
+      </div>}
+      {showControls && period === "custom" && <div className="chart-custom-range"><label>Dari<input type="date" value={customFrom} onChange={(event) => { setInternalFrom(event.target.value); onCustomRangeChange?.(event.target.value, customTo); }} /></label><label>Sampai<input type="date" value={customTo} onChange={(event) => { setInternalTo(event.target.value); onCustomRangeChange?.(customFrom, event.target.value); }} /></label></div>}
       <div className="sales-chart">
         <div className="sales-chart-y-axis"><span>{format(max)}</span><span>{format(max / 2)}</span><span>Rp0</span></div>
         <div className="sales-chart-area">

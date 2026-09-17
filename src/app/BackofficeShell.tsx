@@ -172,27 +172,29 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
   return (
     <div className={`backoffice-layout ${collapsed ? "sidebar-collapsed" : ""}`}>
       <aside ref={sidebarRef} className="backoffice-sidebar" aria-label="Sidebar navigasi">
-        <Link className="backoffice-brand" href="/dashboard" onClick={handleBrandClick} title={collapsed ? "Buka sidebar" : "Tutup sidebar"}>
-          <span className="backoffice-brand-mark" aria-hidden="true"><i>K</i><i>T</i></span>
-          <span className="backoffice-brand-name"><b>{store.storeName}</b><small>KASIR TOKO</small></span>
-        </Link>
-        <button
-          className="sidebar-toggle"
-          type="button"
-          aria-label={collapsed ? "Lebarkan sidebar" : "Minimalkan sidebar"}
-          title={collapsed ? "Lebarkan sidebar" : "Minimalkan sidebar"}
-          onClick={() => {
-            const next = !collapsed;
-            setCollapsed(next);
-            window.localStorage.setItem("tanibangun-sidebar-collapsed", String(next));
-          }}
-        >
-          <svg className="sidebar-toggle-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <rect className="sidebar-toggle-line" x="3" y="4" width="18" height="3" rx="1.5" />
-            <rect className="sidebar-toggle-line" x="3" y="10.5" width="18" height="3" rx="1.5" />
-            <rect className="sidebar-toggle-line" x="3" y="17" width="18" height="3" rx="1.5" />
-          </svg>
-        </button>
+        <div className="backoffice-sidebar-header">
+          <button
+            className="sidebar-toggle"
+            type="button"
+            aria-label={collapsed ? "Lebarkan sidebar" : "Minimalkan sidebar"}
+            title={collapsed ? "Lebarkan sidebar" : "Minimalkan sidebar"}
+            onClick={() => {
+              const next = !collapsed;
+              setCollapsed(next);
+              window.localStorage.setItem("tanibangun-sidebar-collapsed", String(next));
+            }}
+          >
+            <svg className="sidebar-toggle-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect className="sidebar-toggle-line" x="3" y="4" width="18" height="3" rx="1.5" />
+              <rect className="sidebar-toggle-line" x="3" y="10.5" width="18" height="3" rx="1.5" />
+              <rect className="sidebar-toggle-line" x="3" y="17" width="18" height="3" rx="1.5" />
+            </svg>
+          </button>
+          <Link className="backoffice-brand" href="/dashboard" onClick={handleBrandClick} title={collapsed ? "Buka sidebar" : "Tutup sidebar"}>
+            <span className="backoffice-brand-mark" aria-hidden="true"><i>K</i><i>T</i></span>
+            <span className="backoffice-brand-name"><b>{store.storeName}</b><small>KASIR TOKO</small></span>
+          </Link>
+        </div>
         <nav ref={navRef} className="backoffice-nav" aria-label="Menu aplikasi">
           {groups.map((group) => <div className="nav-group" key={group.label}>
             <p>{group.label}</p>

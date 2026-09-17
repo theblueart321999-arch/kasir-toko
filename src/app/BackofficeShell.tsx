@@ -51,6 +51,11 @@ const groups = [
   ] },
 ];
 
+function shortMenuLabel(label: string) {
+  const firstWord = label.split(/\s+/)[0];
+  return firstWord.replace(/[&%]/g, "");
+}
+
 export default function BackofficeShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -193,12 +198,12 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
             <p>{group.label}</p>
             {group.items.map((item) => {
               const active = isActive(item.href);
-              return <Link className={active ? "active" : ""} href={item.href} key={item.href} ref={active ? activeLinkRef : undefined} title={collapsed ? item.label : undefined} onClick={minimizeSidebar}><span>{item.icon}</span><b>{item.label}</b></Link>;
+              return <Link className={active ? "active" : ""} href={item.href} key={item.href} ref={active ? activeLinkRef : undefined} title={collapsed ? item.label : undefined} onClick={minimizeSidebar}><span>{item.icon}</span><b><em>{shortMenuLabel(item.label)}</em><i>{item.label}</i></b></Link>;
             })}
           </div>)}
         </nav>
         <div className="backoffice-footer">
-          <Link className={isActive("/pengaturan") ? "active" : ""} href="/pengaturan" ref={isActive("/pengaturan") ? activeLinkRef : undefined} title={collapsed ? "Pengaturan" : undefined} onClick={minimizeSidebar}><span>⚙</span><b>Pengaturan</b></Link>
+          <Link className={isActive("/pengaturan") ? "active" : ""} href="/pengaturan" ref={isActive("/pengaturan") ? activeLinkRef : undefined} title={collapsed ? "Pengaturan" : undefined} onClick={minimizeSidebar}><span>⚙</span><b><em>Atur</em><i>Pengaturan</i></b></Link>
           <div className="backoffice-user-menu">
             <button
               className="backoffice-user"

@@ -258,6 +258,8 @@ html[data-theme="dark"] .theme-toggle-top:hover { background: #243b2c; }
 .profile-setting { align-items: center; display: flex; gap: 18px; }.profile-avatar { align-items: center; background: #f4dbc6; border-radius: 50%; color: #985d31; display: flex; flex: 0 0 72px; font-size: 22px; font-weight: 700; height: 72px; justify-content: center; overflow: hidden; width: 72px; }.profile-avatar img { height: 100%; object-fit: cover; width: 100%; }.profile-setting p { color: var(--muted); font-size: 11px; margin: 5px 0 10px; }.profile-upload { background: var(--soft-green); border-radius: 7px; color: var(--green); cursor: pointer; display: inline-block; font-size: 11px; font-weight: 700; padding: 9px 12px; }.profile-upload input { display: none; }.profile-setting small { color: var(--muted); display: block; font-size: 9px; margin-top: 7px; }
 .backoffice-sidebar { position: relative; z-index: 10; }
 .backoffice-account-menu { z-index: 40; }
+.sidebar-pin { align-items: center; background: transparent; border: 0; border-radius: 7px; color: #9aa69f; cursor: pointer; display: flex; flex: 0 0 28px; font-size: 22px; height: 28px; justify-content: center; line-height: 1; padding: 0; transform: rotate(-35deg); width: 28px; }.sidebar-pin:hover, .sidebar-pin.active { background: var(--soft-green); color: var(--green); }.sidebar-pin.active { transform: rotate(0deg); }
+.sidebar-collapsed .sidebar-pin { display: none; }
 .backoffice-layout { display: block; }
 .backoffice-global-header { align-items: center; background: #fff; border-bottom: 1px solid var(--line); display: flex; gap: 10px; min-height: 76px; padding: 0 14px; position: relative; z-index: 12; }
 .backoffice-global-header .backoffice-brand { flex: 0 1 231px; }

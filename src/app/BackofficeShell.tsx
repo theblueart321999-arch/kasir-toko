@@ -74,7 +74,16 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
     },
     () => false,
   );
-  const globalHeaderRef = useRef<HTMLElement>(null);
+  const globalHeaderRef = useRef<HTMLElement>(null  );
+  const pinned = useSyncExternalStore(
+    (onStoreChange) => {
+      window.addEventListener("tanibangun-sidebar-pin-change", onStoreChange);
+      return () => window.removeEventListener("tanibangun-sidebar-pin-change", onStoreChange);
+    },
+    () => window.localStorage.getItem("tanibangun-sidebar-pinned") === "true",
+    () => false,
+  );
+  const sidebarIsCollapsed = collapsed && !pinned;
   const hash = useSyncExternalStore(
     (onStoreChange) => {
       window.addEventListener("hashchange", onStoreChange);
@@ -98,7 +107,7 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
   }
 
   useEffect(() => {
-    if (publicPage || collapsed) return;
+    if (publicPage || sidebarIsCollapsed) return;
     const timer = window.setTimeout(() => {
       const nav = navRef.current;
       const activeLink = activeLinkRef.current;
@@ -107,7 +116,7 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
       nav.scrollTop = Math.max(0, targetTop);
     }, 280);
     return () => window.clearTimeout(timer);
-  }, [pathname, hash, collapsed, publicPage]);
+  }, [pathname, hash, sidebarIsCollapsed, publicPage]);
 
   useEffect(() => {
     if (publicPage) return;
@@ -142,6 +151,7 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
   useEffect(() => {
     if (publicPage) return;
     function minimizeAfterAction(event: MouseEvent) {
+      if (pinned) return;
       if (globalHeaderRef.current?.contains(event.target as Node)) return;
       if (sidebarRef.current?.contains(event.target as Node)) return;
       window.setTimeout(() => {
@@ -151,7 +161,7 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
     }
     document.addEventListener("click", minimizeAfterAction);
     return () => document.removeEventListener("click", minimizeAfterAction);
-  }, [publicPage]);
+  }, [publicPage, pinned]);
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -161,8 +171,19 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
 
   function minimizeSidebar() {
     setUserMenuOpen(false);
+    if (pinned) return;
     setCollapsed(true);
     window.localStorage.setItem("tanibangun-sidebar-collapsed", "true");
+  }
+
+  function togglePinned() {
+    const next = !pinned;
+    window.localStorage.setItem("tanibangun-sidebar-pinned", String(next));
+    window.dispatchEvent(new Event("tanibangun-sidebar-pin-change"));
+    if (next) {
+      setCollapsed(false);
+      window.localStorage.setItem("tanibangun-sidebar-collapsed", "false");
+    }
   }
 
   function handleBrandClick(event: React.MouseEvent<HTMLAnchorElement>) {
@@ -182,13 +203,13 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
   if (publicPage) return children;
 
   return (
-    <div className={`backoffice-layout ${collapsed ? "sidebar-collapsed" : ""}`}>
+    <div className={`backoffice-layout ${sidebarIsCollapsed ? "sidebar-collapsed" : ""}`}>
       <header ref={globalHeaderRef} className="backoffice-global-header">
         <button
           className="sidebar-toggle"
           type="button"
-          aria-label={collapsed ? "Lebarkan sidebar" : "Minimalkan sidebar"}
-          title={collapsed ? "Lebarkan sidebar" : "Minimalkan sidebar"}
+          aria-label={sidebarIsCollapsed ? "Lebarkan sidebar" : "Minimalkan sidebar"}
+          title={sidebarIsCollapsed ? "Lebarkan sidebar" : "Minimalkan sidebar"}
           onClick={() => {
             const next = !collapsed;
             setCollapsed(next);
@@ -205,6 +226,7 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
           <span className="backoffice-brand-mark" aria-hidden="true"><i>K</i><i>T</i></span>
           <span className="backoffice-brand-name"><b>{store.storeName}</b><small>KASIR TOKO</small></span>
         </Link>
+        <button className={`sidebar-pin ${pinned ? "active" : ""}`} type="button" onClick={togglePinned} aria-label={pinned ? "Lepas pin sidebar" : "Pin sidebar"} title={pinned ? "Lepas pin sidebar" : "Pin sidebar"}>⌖</button>
       </header>
       <div className="backoffice-body">
         <aside ref={sidebarRef} className="backoffice-sidebar" aria-label="Sidebar navigasi">
@@ -212,8 +234,8 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
           <button
             className="sidebar-toggle"
             type="button"
-            aria-label={collapsed ? "Lebarkan sidebar" : "Minimalkan sidebar"}
-            title={collapsed ? "Lebarkan sidebar" : "Minimalkan sidebar"}
+            aria-label={sidebarIsCollapsed ? "Lebarkan sidebar" : "Minimalkan sidebar"}
+            title={sidebarIsCollapsed ? "Lebarkan sidebar" : "Minimalkan sidebar"}
             onClick={() => {
               const next = !collapsed;
               setCollapsed(next);
@@ -226,22 +248,23 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
               <rect className="sidebar-toggle-line" x="3" y="17" width="18" height="3" rx="1.5" />
             </svg>
           </button>
-          <Link className="backoffice-brand" href="/dashboard" onClick={handleBrandClick} title={collapsed ? "Buka sidebar" : "Tutup sidebar"}>
+          <Link className="backoffice-brand" href="/dashboard" onClick={handleBrandClick} title={sidebarIsCollapsed ? "Buka sidebar" : "Tutup sidebar"}>
             <span className="backoffice-brand-mark" aria-hidden="true"><i>K</i><i>T</i></span>
             <span className="backoffice-brand-name"><b>{store.storeName}</b><small>KASIR TOKO</small></span>
           </Link>
+           <button className={`sidebar-pin ${pinned ? "active" : ""}`} type="button" onClick={togglePinned} aria-label={pinned ? "Lepas pin sidebar" : "Pin sidebar"} title={pinned ? "Lepas pin sidebar" : "Pin sidebar"}>⌖</button>
             </div>
             <nav ref={navRef} className="backoffice-nav" aria-label="Menu aplikasi">
           {groups.map((group) => <div className="nav-group" key={group.label}>
             <p>{group.label}</p>
             {group.items.map((item) => {
               const active = isActive(item.href);
-              return <Link className={active ? "active" : ""} href={item.href} key={item.href} ref={active ? activeLinkRef : undefined} title={collapsed ? item.label : undefined} onClick={minimizeSidebar}><span>{item.icon}</span><b><em>{shortMenuLabel(item.label)}</em><i>{item.label}</i></b></Link>;
+              return <Link className={active ? "active" : ""} href={item.href} key={item.href} ref={active ? activeLinkRef : undefined} title={sidebarIsCollapsed ? item.label : undefined} onClick={minimizeSidebar}><span>{item.icon}</span><b><em>{shortMenuLabel(item.label)}</em><i>{item.label}</i></b></Link>;
             })}
           </div>)}
           </nav>
           <div className="backoffice-footer">
-          <Link className={isActive("/pengaturan") ? "active" : ""} href="/pengaturan" ref={isActive("/pengaturan") ? activeLinkRef : undefined} title={collapsed ? "Setting" : undefined} onClick={minimizeSidebar}><span>⚙</span><b><em>Setting</em><i>Setting</i></b></Link>
+          <Link className={isActive("/pengaturan") ? "active" : ""} href="/pengaturan" ref={isActive("/pengaturan") ? activeLinkRef : undefined} title={sidebarIsCollapsed ? "Setting" : undefined} onClick={minimizeSidebar}><span>⚙</span><b><em>Setting</em><i>Setting</i></b></Link>
           <div className="backoffice-user-menu">
             <button
               className="backoffice-user"

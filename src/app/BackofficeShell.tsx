@@ -203,7 +203,7 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
           </div>)}
         </nav>
         <div className="backoffice-footer">
-          <Link className={isActive("/pengaturan") ? "active" : ""} href="/pengaturan" ref={isActive("/pengaturan") ? activeLinkRef : undefined} title={collapsed ? "Pengaturan" : undefined} onClick={minimizeSidebar}><span>⚙</span><b><em>Atur</em><i>Pengaturan</i></b></Link>
+          <Link className={isActive("/pengaturan") ? "active" : ""} href="/pengaturan" ref={isActive("/pengaturan") ? activeLinkRef : undefined} title={collapsed ? "Setting" : undefined} onClick={minimizeSidebar}><span>⚙</span><b><em>Setting</em><i>Setting</i></b></Link>
           <div className="backoffice-user-menu">
             <button
               className="backoffice-user"

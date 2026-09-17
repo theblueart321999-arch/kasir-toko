@@ -57,6 +57,7 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
   const [operator, setOperator] = useState<Operator | null>(null);
   const [store, setStore] = useState<StoreSetting>({ storeName: "TaniBangun" });
   const [collapsed, setCollapsed] = useState(true);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const hash = useSyncExternalStore(
     (onStoreChange) => {
       window.addEventListener("hashchange", onStoreChange);
@@ -122,6 +123,7 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
   }
 
   function minimizeSidebar() {
+    setUserMenuOpen(false);
     setCollapsed(true);
     window.localStorage.setItem("tanibangun-sidebar-collapsed", "true");
   }
@@ -177,8 +179,24 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
         </nav>
         <div className="backoffice-footer">
           <Link className={isActive("/pengaturan") ? "active" : ""} href="/pengaturan" ref={isActive("/pengaturan") ? activeLinkRef : undefined} title={collapsed ? "Pengaturan" : undefined} onClick={minimizeSidebar}><span>⚙</span><b>Pengaturan</b></Link>
-          <div className="backoffice-user"><div className="backoffice-avatar">{operator?.name?.slice(0, 2).toUpperCase() || "TB"}</div><span><b>{operator?.name || "Operator"}</b><small>{operator?.role || "Memuat..."}</small></span></div>
-          <button className="backoffice-logout" onClick={logout} title={collapsed ? "Keluar" : undefined}><span>↪</span><b>Keluar</b></button>
+          <div className="backoffice-user-menu">
+            <button
+              className="backoffice-user"
+              type="button"
+              aria-expanded={userMenuOpen}
+              aria-haspopup="menu"
+              onClick={() => setUserMenuOpen((open) => !open)}
+              title="Buka menu akun"
+            >
+              <div className="backoffice-avatar">{operator?.name?.slice(0, 2).toUpperCase() || "TB"}</div>
+              <span><b>{operator?.name || "Operator"}</b><small>{operator?.role || "Memuat..."}</small></span>
+            </button>
+            {userMenuOpen && (
+              <div className="backoffice-account-menu" role="menu">
+                <button type="button" onClick={logout} role="menuitem"><span>↪</span>Keluar</button>
+              </div>
+            )}
+          </div>
         </div>
       </aside>
       <section className="backoffice-content">{children}</section>

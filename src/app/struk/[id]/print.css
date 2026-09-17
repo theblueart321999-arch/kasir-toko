@@ -1,0 +1,8 @@
+.receipt { max-width: 440px; margin: 0 auto; padding: 24px; color: #111; font: 14px Arial, sans-serif; background: #fff; }
+.receipt-actions { display:flex; justify-content:space-between; margin-bottom:20px; }
+.receipt-actions a,.receipt-actions button { border:1px solid #ddd; padding:8px 12px; background:#fff; color:#111; text-decoration:none; border-radius:6px; }
+.receipt article { border:1px solid #ddd; padding:24px; }
+.receipt header { text-align:center; }.receipt h1 { margin:0 0 6px; font-size:22px; }.receipt p { margin:4px 0; color:#555; }.receipt hr { border:0; border-top:1px dashed #aaa; margin:16px 0; }
+.receipt-line { display:flex; justify-content:space-between; gap:16px; margin:10px 0; }.receipt-line span { flex:1; }.receipt-line small { display:block; color:#666; margin-top:3px; }
+.receipt-total { display:grid; grid-template-columns:1fr auto; gap:8px; }.receipt-total strong { font-size:16px; }.receipt-footer { text-align:center; margin-top:24px !important; }
+@media print { .no-print { display:none !important; } .receipt { padding:0; max-width:none; } .receipt article { border:0; padding:0; } }

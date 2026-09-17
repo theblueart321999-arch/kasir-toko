@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tanibangun-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tanibangun
+      POSTGRES_PASSWORD: tanibangun
+      POSTGRES_DB: tanibangun
+    ports:
+      - "5432:5432"
+    volumes:
+      - tanibangun-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tanibangun -d tanibangun"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  tanibangun-postgres-data:

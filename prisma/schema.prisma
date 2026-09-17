@@ -1,0 +1,492 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Category {
+  BANGUNAN
+  PERTANIAN
+}
+
+enum PaymentMethod {
+  TUNAI
+  QRIS
+  DEBIT
+}
+
+enum SaleStatus {
+  COMPLETED
+  VOIDED
+}
+
+enum ReturnStatus {
+  COMPLETED
+  CANCELLED
+}
+
+enum PurchaseStatus {
+  COMPLETED
+  CANCELLED
+}
+
+enum PurchasePaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+}
+
+enum Role {
+  ADMIN
+  KASIR
+  OWNER
+}
+
+enum StockMovementType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+enum MoneyMovementType {
+  IN
+  OUT
+  TRANSFER
+}
+
+model Account {
+  id           Int       @id @default(autoincrement())
+  name         String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  operators    Operator[]
+  products     Product[]
+  categories   ProductCategory[]
+  settings     StoreSetting[]
+  customers    Customer[]
+  suppliers    Supplier[]
+  purchases    Purchase[]
+  purchaseReturns PurchaseReturn[]
+  sales        Sale[]
+  saleReturns  SaleReturn[]
+  cashAccounts CashAccount[]
+  receivables  Receivable[]
+  payables     Payable[]
+  stockMovements StockMovement[]
+  moneyMovements MoneyMovement[]
+  purchaseItems PurchaseItem[]
+  purchaseReturnItems PurchaseReturnItem[]
+  saleItems    SaleItem[]
+  saleReturnItems SaleReturnItem[]
+  workspaceId   Int?      @unique
+  workspace     Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@unique([name])
+}
+
+/// A workspace is the tenant boundary. Account is retained as the legacy store
+/// record so existing data and APIs can be migrated without changing IDs.
+model Workspace {
+  id          Int                 @id @default(autoincrement())
+  name        String
+  ownerId     Int?
+  owner       Operator?           @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  account     Account?
+  memberships OperatorWorkspace[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([ownerId])
+}
+
+model OperatorWorkspace {
+  id          Int       @id @default(autoincrement())
+  operatorId  Int
+  workspaceId Int
+  role        Role
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  operator    Operator  @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([operatorId, workspaceId])
+  @@index([workspaceId, active])
+}
+
+model Operator {
+  id           Int       @id @default(autoincrement())
+  name         String
+  username     String    @unique
+  googleId     String?      @unique
+  email        String?      @unique
+  passwordHash String
+  role         Role      @default(KASIR)
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
+  stockMovements StockMovement[]
+  saleReturns  SaleReturn[]
+  purchases    Purchase[]
+  purchaseReturns PurchaseReturn[]
+  moneyMovements MoneyMovement[]
+  accountId    Int?
+  account      Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  memberships  OperatorWorkspace[]
+  ownedWorkspaces Workspace[] @relation("WorkspaceOwner")
+}
+
+model Session {
+  id         Int      @id @default(autoincrement())
+  tokenHash  String   @unique
+  operatorId Int
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  operator   Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@index([operatorId])
+  @@index([expiresAt])
+}
+
+model Product {
+  id         Int        @id @default(autoincrement())
+  sku        String     @unique
+  name       String
+  category   Category
+  categoryId Int?
+  price      Int
+  discountPercent Float    @default(0)
+  stock      Int        @default(0)
+  unit       String
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  saleItems  SaleItem[]
+  categoryRef ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  stockMovements StockMovement[]
+  saleReturnItems SaleReturnItem[]
+  purchaseItems PurchaseItem[]
+  purchaseReturnItems PurchaseReturnItem[]
+  accountId   Int?
+  account     Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([category])
+  @@index([categoryId])
+  @@index([name])
+}
+
+model StoreSetting {
+  id            Int      @id @default(autoincrement())
+  storeName     String   @default("Toko Makmur Jaya")
+  address       String   @default("")
+  phone         String   @default("")
+  taxRate       Float    @default(11)
+  receiptFooter String   @default("Terima kasih atas kunjungan Anda")
+  updatedAt     DateTime @updatedAt
+  accountId     Int?
+  account       Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  @@index([accountId])
+}
+
+model StockMovement {
+  id          Int               @id @default(autoincrement())
+  productId   Int
+  operatorId  Int
+  type        StockMovementType
+  quantity    Int
+  beforeStock Int
+  afterStock  Int
+  note        String?
+  reference   String?
+  createdAt   DateTime          @default(now())
+  product     Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  operator    Operator          @relation(fields: [operatorId], references: [id], onDelete: Restrict)
+  accountId   Int?
+  account     Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([productId, createdAt])
+  @@index([operatorId])
+  @@index([createdAt])
+}
+
+model ProductCategory {
+  id             Int       @id @default(autoincrement())
+  name           String    @unique
+  slug           String    @unique
+  legacyCategory Category? @unique
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  products       Product[]
+  accountId      Int?
+  account        Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+}
+
+model Customer {
+  id         Int      @id @default(autoincrement())
+  name       String
+  phone      String?  @unique
+  email      String?  @unique
+  address    String?
+  notes      String?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  sales      Sale[]
+  receivables Receivable[]
+  accountId   Int?
+  account     Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([name])
+}
+
+model Supplier {
+  id         Int      @id @default(autoincrement())
+  name       String
+  phone      String?  @unique
+  email      String?  @unique
+  address    String?
+  notes      String?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  purchases  Purchase[]
+  payables   Payable[]
+  accountId  Int?
+  account    Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([name])
+}
+
+model Purchase {
+  id              Int                   @id @default(autoincrement())
+  invoiceNumber   String                @unique
+  reference       String?
+  supplierId      Int
+  operatorId      Int
+  subtotal        Int
+  tax             Int                   @default(0)
+  total           Int
+  paymentStatus   PurchasePaymentStatus @default(PAID)
+  status          PurchaseStatus        @default(COMPLETED)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  supplier        Supplier              @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  operator        Operator              @relation(fields: [operatorId], references: [id], onDelete: Restrict)
+  items           PurchaseItem[]
+  returns         PurchaseReturn[]
+  accountId       Int?
+  account         Account?             @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([supplierId, createdAt])
+  @@index([operatorId])
+  @@index([createdAt])
+  @@index([status])
+}
+
+model PurchaseItem {
+  id          Int      @id @default(autoincrement())
+  purchaseId  Int
+  productId   Int
+  quantity    Int
+  unitPrice   Int
+  total       Int
+  purchase    Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  accountId   Int?
+  account     Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@unique([purchaseId, productId])
+  @@index([productId])
+}
+
+model PurchaseReturn {
+  id          Int                   @id @default(autoincrement())
+  purchaseId  Int
+  operatorId  Int
+  reason      String
+  total       Int
+  status      ReturnStatus           @default(COMPLETED)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  purchase    Purchase              @relation(fields: [purchaseId], references: [id], onDelete: Restrict)
+  operator    Operator              @relation(fields: [operatorId], references: [id], onDelete: Restrict)
+  items       PurchaseReturnItem[]
+  accountId   Int?
+  account     Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([purchaseId, createdAt])
+  @@index([operatorId])
+  @@index([status])
+}
+
+model PurchaseReturnItem {
+  id          Int            @id @default(autoincrement())
+  returnId    Int
+  productId   Int
+  quantity    Int
+  unitPrice   Int
+  total       Int
+  purchaseReturn PurchaseReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  product     Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
+  accountId   Int?
+  account     Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@unique([returnId, productId])
+  @@index([productId])
+}
+
+model Sale {
+  id             Int           @id @default(autoincrement())
+  invoiceNumber  String        @unique
+  customerId     Int?
+  subtotal       Int
+  tax            Int           @default(0)
+  total          Int
+  paymentMethod  PaymentMethod
+  status         SaleStatus    @default(COMPLETED)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  customer       Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items          SaleItem[]
+  returns        SaleReturn[]
+  accountId      Int?
+  account        Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([customerId])
+  @@index([createdAt])
+  @@index([status])
+}
+
+model SaleItem {
+  id         Int     @id @default(autoincrement())
+  saleId     Int
+  productId  Int
+  quantity   Int
+  unitPrice  Int
+  total      Int
+  sale       Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product    Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  accountId  Int?
+  account    Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@unique([saleId, productId])
+  @@index([productId])
+}
+
+model SaleReturn {
+  id          Int          @id @default(autoincrement())
+  saleId      Int
+  operatorId  Int
+  reason      String
+  total       Int
+  status      ReturnStatus @default(COMPLETED)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  sale        Sale         @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  operator    Operator     @relation(fields: [operatorId], references: [id], onDelete: Restrict)
+  items       SaleReturnItem[]
+  accountId   Int?
+  account     Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([saleId, createdAt])
+  @@index([operatorId])
+  @@index([status])
+}
+
+model SaleReturnItem {
+  id         Int        @id @default(autoincrement())
+  returnId   Int
+  productId  Int
+  quantity   Int
+  unitPrice  Int
+  total      Int
+  saleReturn SaleReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
+  accountId  Int?
+  account    Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@unique([returnId, productId])
+  @@index([productId])
+}
+
+model CashAccount {
+  id             Int             @id @default(autoincrement())
+  name           String          @unique
+  type           String          @default("CASH")
+  openingBalance Int             @default(0)
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  fromMovements  MoneyMovement[] @relation("MovementFromAccount")
+  toMovements    MoneyMovement[] @relation("MovementToAccount")
+  accountId      Int?
+  account        Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([active])
+}
+
+model MoneyMovement {
+  id            Int                @id @default(autoincrement())
+  type          MoneyMovementType
+  fromAccountId Int?
+  toAccountId   Int?
+  amount        Int
+  note          String?
+  reference     String?
+  operatorId    Int
+  createdAt     DateTime           @default(now())
+  fromAccount   CashAccount?       @relation("MovementFromAccount", fields: [fromAccountId], references: [id], onDelete: Restrict)
+  toAccount     CashAccount?       @relation("MovementToAccount", fields: [toAccountId], references: [id], onDelete: Restrict)
+  operator      Operator           @relation(fields: [operatorId], references: [id], onDelete: Restrict)
+  accountId     Int?
+  account       Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([fromAccountId, createdAt])
+  @@index([toAccountId, createdAt])
+  @@index([operatorId])
+}
+
+model Receivable {
+  id           Int      @id @default(autoincrement())
+  customerId   Int?
+  customerName String
+  reference    String?
+  amount       Int
+  paidAmount   Int      @default(0)
+  dueDate      DateTime?
+  note         String?
+  status       String   @default("OPEN")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  customer     Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  accountId    Int?
+  account      Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Payable {
+  id           Int      @id @default(autoincrement())
+  supplierId   Int?
+  supplierName String
+  reference    String?
+  amount       Int
+  paidAmount   Int      @default(0)
+  dueDate      DateTime?
+  note         String?
+  status       String   @default("OPEN")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  supplier     Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  accountId    Int?
+  account      Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([supplierId])
+  @@index([status])
+  @@index([createdAt])
+}

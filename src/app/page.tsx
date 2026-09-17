@@ -194,7 +194,11 @@ export default function Home() {
       <section className="workspace" id="kasir">
         <header className="topbar">
           <div><p className="eyebrow">RABU, 16 SEPTEMBER 2026</p><h1>Selamat datang, Andi <span>✦</span></h1></div>
-          <div className="top-actions"><button className="icon-button" aria-label="Notifikasi">♧<i /></button><button className="help-button">? Bantuan</button></div>
+          <div className="top-actions">
+            <button className="icon-button" aria-label="Notifikasi" title="Notifikasi">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg><i />
+            </button>
+          </div>
         </header>
         <div className="content-grid">
           <section className="catalog">

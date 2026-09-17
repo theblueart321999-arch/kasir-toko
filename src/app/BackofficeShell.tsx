@@ -5,8 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 type Operator = { name: string; role: string; avatarUrl?: string | null };
-type StoreSetting = { storeName: string };
-
 const groups = [
   { label: "Navigasi", items: [
     { href: "/dashboard", icon: "⌂", label: "Dashboard" }, { href: "/", icon: "▣", label: "Kasir" },
@@ -60,7 +58,6 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const [operator, setOperator] = useState<Operator | null>(null);
-  const [store, setStore] = useState<StoreSetting>({ storeName: "TaniBangun" });
   const [collapsed, setCollapsed] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const darkMode = useSyncExternalStore(
@@ -140,16 +137,6 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (publicPage) return;
-    fetch("/api/settings/store").then(async (response) => {
-      if (response.ok) {
-        const data = await response.json();
-        if (typeof data.storeName === "string" && data.storeName.trim()) setStore({ storeName: data.storeName.trim() });
-      }
-    }).catch(() => undefined);
-  }, [publicPage]);
-
-  useEffect(() => {
-    if (publicPage) return;
     function minimizeAfterAction(event: MouseEvent) {
       if (pinned) return;
       if (globalHeaderRef.current?.contains(event.target as Node)) return;
@@ -224,7 +211,7 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
         </button>
         <Link className="backoffice-brand" href="/dashboard" title="Dashboard">
           <span className="backoffice-brand-mark" aria-hidden="true"><i>K</i><i>T</i></span>
-          <span className="backoffice-brand-name"><b>{store.storeName}</b><small>KASIR TOKO</small></span>
+          <span className="backoffice-brand-name"><b>Kasir Toko</b></span>
         </Link>
         <button className={`sidebar-pin ${pinned ? "active" : ""}`} type="button" onClick={togglePinned} aria-label={pinned ? "Lepas pin sidebar" : "Pin sidebar"} title={pinned ? "Lepas pin sidebar" : "Pin sidebar"}>⌖</button>
       </header>
@@ -250,9 +237,8 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
           </button>
           <Link className="backoffice-brand" href="/dashboard" onClick={handleBrandClick} title={sidebarIsCollapsed ? "Buka sidebar" : "Tutup sidebar"}>
             <span className="backoffice-brand-mark" aria-hidden="true"><i>K</i><i>T</i></span>
-            <span className="backoffice-brand-name"><b>{store.storeName}</b><small>KASIR TOKO</small></span>
+            <span className="backoffice-brand-name"><b>Kasir Toko</b></span>
           </Link>
-           <button className={`sidebar-pin ${pinned ? "active" : ""}`} type="button" onClick={togglePinned} aria-label={pinned ? "Lepas pin sidebar" : "Pin sidebar"} title={pinned ? "Lepas pin sidebar" : "Pin sidebar"}>⌖</button>
             </div>
             <nav ref={navRef} className="backoffice-nav" aria-label="Menu aplikasi">
           {groups.map((group) => <div className="nav-group" key={group.label}>

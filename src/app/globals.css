@@ -277,6 +277,7 @@ html[data-theme="dark"] .backoffice-global-header { background: #142019; }
 .backoffice-sidebar-header .backoffice-brand { flex: 1 1 auto; min-width: 0; }
 .backoffice-sidebar-header .backoffice-brand-name { min-width: 0; overflow: hidden; }
 .backoffice-sidebar-header .backoffice-brand-name b { font-size: 13px; letter-spacing: -.25px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.backoffice-global-header .backoffice-brand-name b { font-size: 15px; }
 .backoffice-sidebar-header .backoffice-brand-name small { font-size: 6px; letter-spacing: 1.3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .backoffice-sidebar-header .sidebar-toggle { flex-basis: 32px; height: 32px; padding: 6px; width: 32px; }
 .backoffice-sidebar-header .sidebar-toggle-icon { height: 19px; width: 19px; }

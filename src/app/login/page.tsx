@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -12,7 +12,17 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const savedTheme = window.localStorage.getItem("kasir-toko-theme");
+    return savedTheme ? savedTheme === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
   const googleError = searchParams.get("error");
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = darkMode ? "dark" : "light";
+    window.localStorage.setItem("kasir-toko-theme", darkMode ? "dark" : "light");
+  }, [darkMode]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,6 +47,7 @@ function LoginForm() {
 
   return (
     <main className="login-page">
+      <button className="login-theme-toggle" type="button" onClick={() => setDarkMode((dark) => !dark)} aria-label={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"}>{darkMode ? "☀ Terang" : "☾ Gelap"}</button>
       <div className="login-decoration login-decoration-one" />
       <div className="login-decoration login-decoration-two" />
       <section className="login-layout">

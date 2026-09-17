@@ -277,3 +277,10 @@ html[data-theme="dark"] .theme-toggle-top:hover { background: #243b2c; }
   .sidebar-collapsed .backoffice-nav a b em,
   .sidebar-collapsed .backoffice-footer > a b em { display: block; }
 }
+.backoffice-layout { display: block; }
+.backoffice-body { display: flex; min-height: calc(100vh - 76px); }
+.backoffice-sidebar-header { background: #fff; margin: 0; min-height: 76px; padding: 0 14px; position: relative; z-index: 2; }
+.backoffice-sidebar { height: calc(100vh - 76px); max-height: none; position: sticky; top: 0; }
+.backoffice-sidebar-header .backoffice-brand { flex: 0 1 231px; }
+.sidebar-collapsed .backoffice-sidebar-header { gap: 8px; margin: 0; padding: 0 14px; }
+.sidebar-collapsed .backoffice-sidebar-header .backoffice-brand { flex: 0 1 231px; }

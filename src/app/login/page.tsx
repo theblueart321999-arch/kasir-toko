@@ -43,7 +43,7 @@ function LoginForm() {
   return (
     <main className="min-h-screen flex items-center justify-center p-6">
       <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div><p className="text-sm font-semibold tracking-wide text-slate-500">TANIBANGUN POS</p><h1 className="mt-2 text-2xl font-bold">Masuk ke dashboard</h1></div>
+        <div><p className="text-sm font-semibold tracking-wide text-slate-500">KASIR TOKO</p><h1 className="mt-2 text-2xl font-bold">Masuk ke dashboard</h1></div>
         <label className="block text-sm font-medium">Username<input required value={username} onChange={(e) => setUsername(e.target.value)} className="mt-1 w-full rounded border p-2" autoComplete="username" /></label>
         <label className="block text-sm font-medium">Password<input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1 w-full rounded border p-2" autoComplete="current-password" /></label>
         {(error || googleError) && <p className="text-sm text-red-600" role="alert">{error || (googleError === "google_config" ? "Login Google belum dikonfigurasi oleh administrator." : googleError === "google_state" ? "Sesi Google tidak valid. Silakan coba lagi." : "Login Google gagal. Silakan coba lagi.")}</p>}

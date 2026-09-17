@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Kasir Toko",
-  description: "Aplikasi kasir alat dan bahan bangunan serta pertanian",
+  description: "Aplikasi kasir toko",
   icons: {
     icon: [{ url: "/icon.svg?v=3", type: "image/svg+xml" }],
     shortcut: ["/icon.svg?v=3"],

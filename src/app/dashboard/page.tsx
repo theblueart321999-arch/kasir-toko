@@ -47,7 +47,7 @@ export default async function DashboardPage() {
     <main className="dashboard-page">
       <header className="dashboard-header">
         <div>
-          <p className="eyebrow">TANIBANGUN POS</p>
+          <p className="eyebrow">KASIR TOKO</p>
           <h1>Dashboard Utama</h1>
           <p className="dashboard-subtitle">Pusat kendali operasional toko Anda. Masuk sebagai {operator.name} ({operator.role}).</p>
         </div>

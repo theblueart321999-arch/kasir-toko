@@ -1,4 +1,4 @@
-# TaniBangun POS
+# Kasir Toko
 
 Aplikasi kasir untuk alat dan bahan bangunan serta pertanian menggunakan Next.js, PostgreSQL, dan Prisma.
 

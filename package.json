@@ -1,5 +1,5 @@
 {
-  "name": "kasir-material",
+  "name": "kasir-toko",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,9 +11,9 @@
     "db:push": "prisma db push",
     "db:migrate-tenancy": "tsx prisma/migrate-tenancy.ts",
     "db:seed": "tsx prisma/seed.ts",
-    "db:setup": "npm run db:generate && npm run db:push && npm run db:migrate-tenancy && npm run db:seed"
-    ,"backup": "tsx scripts/backup.ts"
-    ,"vercel-build": "npm run db:generate && npm run build"
+    "db:setup": "npm run db:generate && npm run db:push && npm run db:migrate-tenancy && npm run db:seed",
+    "backup": "tsx scripts/backup.ts",
+    "vercel-build": "npm run db:generate && npm run build"
   },
   "dependencies": {
     "@prisma/client": "^6.16.1",
@@ -36,5 +36,6 @@
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
-  }
+  },
+  "description": "Aplikasi kasir toko"
 }

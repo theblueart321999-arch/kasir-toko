@@ -46,7 +46,7 @@ export default function KontakManager({ operatorName, canManage }: { operatorNam
   }
   const title = tab === "customers" ? "Customer" : "Supplier";
   return <main className="management-page contacts-page">
-    <header className="management-header"><div><p className="eyebrow">TANIBANGUN POS · RELASI</p><h1>Customer &amp; Supplier</h1><p>Kelola kontak pelanggan dan pemasok toko.</p></div><div className="management-user">Masuk sebagai <b>{operatorName}</b><a href="/dashboard">← Dashboard</a></div></header>
+    <header className="management-header"><div><p className="eyebrow">KASIR TOKO · RELASI</p><h1>Customer &amp; Supplier</h1><p>Kelola kontak pelanggan dan pemasok toko.</p></div><div className="management-user">Masuk sebagai <b>{operatorName}</b><a href="/dashboard">← Dashboard</a></div></header>
     {notice && <div className="management-notice">{notice}</div>}
     <section className="contact-summary"><article><span>Total customer</span><strong>{customers.length}</strong><small>Data pelanggan tersimpan</small></article><article><span>Total supplier</span><strong>{suppliers.length}</strong><small>Mitra pemasok tersimpan</small></article><article><span>Kontak aktif</span><strong>{contacts.filter((item) => item.active).length}</strong><small>Di tab {title.toLowerCase()}</small></article></section>
     <section className="contact-card">

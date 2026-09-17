@@ -188,6 +188,9 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
             <path d={collapsed ? "m10 8 4 4-4 4" : "m14 8-4 4 4 4"} />
           </svg>
         </button>
+        <button className="theme-toggle" type="button" onClick={toggleTheme} title={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"} aria-label={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"}>
+          <span aria-hidden="true">{darkMode ? "☀" : "☾"}</span><b>{darkMode ? "Tema terang" : "Tema gelap"}</b>
+        </button>
         <nav ref={navRef} className="backoffice-nav" aria-label="Menu aplikasi">
           {groups.map((group) => <div className="nav-group" key={group.label}>
             <p>{group.label}</p>
@@ -199,9 +202,6 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
         </nav>
         <div className="backoffice-footer">
           <Link className={isActive("/pengaturan") ? "active" : ""} href="/pengaturan" ref={isActive("/pengaturan") ? activeLinkRef : undefined} title={collapsed ? "Pengaturan" : undefined} onClick={minimizeSidebar}><span>⚙</span><b>Pengaturan</b></Link>
-          <button className="theme-toggle" type="button" onClick={toggleTheme} title={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"} aria-label={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"}>
-            <span aria-hidden="true">{darkMode ? "☀" : "☾"}</span><b>{darkMode ? "Tema terang" : "Tema gelap"}</b>
-          </button>
           <div className="backoffice-user-menu">
             <button
               className="backoffice-user"

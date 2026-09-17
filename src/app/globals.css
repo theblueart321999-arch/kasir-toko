@@ -270,6 +270,15 @@ html[data-theme="dark"] .backoffice-global-header { background: #142019; }
   .backoffice-body { min-height: calc(100vh - 64px); }
   .backoffice-body .backoffice-sidebar { height: calc(100vh - 64px); }
 }
+.backoffice-sidebar { bottom: 0; height: 100vh; left: 0; max-height: none; position: fixed; top: 0; z-index: 50; }
+.backoffice-global-header, .backoffice-body { margin-left: 245px; }
+.backoffice-body { min-height: calc(100vh - 76px); }
+.backoffice-body .backoffice-sidebar { height: 100vh; position: fixed; top: 0; }
+.sidebar-collapsed .backoffice-global-header, .sidebar-collapsed .backoffice-body { margin-left: 145px; }
+@media (max-width: 800px) {
+  .backoffice-global-header, .backoffice-body { margin-left: 245px; }
+  .sidebar-collapsed .backoffice-global-header, .sidebar-collapsed .backoffice-body { margin-left: 145px; }
+}
 .return-page { background: var(--cream); min-height: 100vh; padding: 34px clamp(18px, 5vw, 70px) 70px; }
 .return-header { align-items: flex-end; display: flex; justify-content: space-between; margin: 0 auto 24px; max-width: 1180px; }
 .return-back { color: var(--green); display: inline-block; font-size: 11px; margin-bottom: 25px; text-decoration: none; }

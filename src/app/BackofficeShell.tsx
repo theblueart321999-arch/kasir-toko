@@ -58,6 +58,11 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
   const [store, setStore] = useState<StoreSetting>({ storeName: "TaniBangun" });
   const [collapsed, setCollapsed] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const savedTheme = window.localStorage.getItem("kasir-toko-theme");
+    return savedTheme ? savedTheme === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
   const hash = useSyncExternalStore(
     (onStoreChange) => {
       window.addEventListener("hashchange", onStoreChange);
@@ -70,6 +75,11 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
   const navRef = useRef<HTMLElement>(null);
   const activeLinkRef = useRef<HTMLAnchorElement>(null);
   const publicPage = pathname === "/login" || pathname === "/daftar" || pathname.startsWith("/struk/");
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = darkMode ? "dark" : "light";
+    window.localStorage.setItem("kasir-toko-theme", darkMode ? "dark" : "light");
+  }, [darkMode]);
 
   useEffect(() => {
     if (publicPage || collapsed) return;
@@ -179,6 +189,9 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
         </nav>
         <div className="backoffice-footer">
           <Link className={isActive("/pengaturan") ? "active" : ""} href="/pengaturan" ref={isActive("/pengaturan") ? activeLinkRef : undefined} title={collapsed ? "Pengaturan" : undefined} onClick={minimizeSidebar}><span>⚙</span><b>Pengaturan</b></Link>
+          <button className="theme-toggle" type="button" onClick={() => setDarkMode((dark) => !dark)} title={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"} aria-label={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"}>
+            <span aria-hidden="true">{darkMode ? "☀" : "☾"}</span><b>{darkMode ? "Tema terang" : "Tema gelap"}</b>
+          </button>
           <div className="backoffice-user-menu">
             <button
               className="backoffice-user"

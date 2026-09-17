@@ -232,7 +232,6 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
             </button>
             {userMenuOpen && (
               <div className="backoffice-account-menu" role="menu">
-                <Link href="/pengaturan#profil" role="menuitem" onClick={() => setUserMenuOpen(false)}><span>⚙</span>Setting</Link>
                 <button type="button" onClick={logout} role="menuitem"><span>↪</span>Keluar</button>
               </div>
             )}

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { setTenant } from "@/lib/tenant";
 
 export const SESSION_COOKIE = "tanibangun_session";
-const SESSION_DURATION_MS = 1000 * 60 * 60 * 12;
+const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 365 * 10;
 
 export function hashSessionToken(token: string) {
   return createHash("sha256").update(token).digest("hex");

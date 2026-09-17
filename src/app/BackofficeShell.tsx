@@ -74,6 +74,7 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
     },
     () => false,
   );
+  const globalHeaderRef = useRef<HTMLElement>(null);
   const hash = useSyncExternalStore(
     (onStoreChange) => {
       window.addEventListener("hashchange", onStoreChange);
@@ -141,6 +142,7 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
   useEffect(() => {
     if (publicPage) return;
     function minimizeAfterAction(event: MouseEvent) {
+      if (globalHeaderRef.current?.contains(event.target as Node)) return;
       if (sidebarRef.current?.contains(event.target as Node)) return;
       window.setTimeout(() => {
         setCollapsed(true);
@@ -181,7 +183,7 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
 
   return (
     <div className={`backoffice-layout ${collapsed ? "sidebar-collapsed" : ""}`}>
-      <header className="backoffice-global-header">
+      <header ref={globalHeaderRef} className="backoffice-global-header">
         <button
           className="sidebar-toggle"
           type="button"

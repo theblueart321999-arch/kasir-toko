@@ -63,7 +63,6 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
   const [store, setStore] = useState<StoreSetting>({ storeName: "TaniBangun" });
   const [collapsed, setCollapsed] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [avatarSaving, setAvatarSaving] = useState(false);
   const darkMode = useSyncExternalStore(
     (onStoreChange) => {
       window.addEventListener("kasir-toko-theme-change", onStoreChange);
@@ -148,37 +147,6 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
     router.refresh();
   }
 
-  async function changeAvatar(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 1_500_000) {
-      window.alert("Pilih foto JPG, PNG, atau WebP maksimal 1,5 MB.");
-      return;
-    }
-    const avatarUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Foto tidak dapat dibaca."));
-      reader.onerror = () => reject(new Error("Foto tidak dapat dibaca."));
-      reader.readAsDataURL(file);
-    }).catch(() => "");
-    if (!avatarUrl) {
-      window.alert("Foto tidak dapat dibaca.");
-      return;
-    }
-    setAvatarSaving(true);
-    try {
-      const response = await fetch("/api/auth/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ avatarUrl }) });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Foto profil gagal disimpan.");
-      setOperator(data.operator);
-    } catch (error) {
-      window.alert(error instanceof Error ? error.message : "Foto profil gagal disimpan.");
-    } finally {
-      setAvatarSaving(false);
-    }
-  }
-
   function minimizeSidebar() {
     setUserMenuOpen(false);
     setCollapsed(true);
@@ -247,14 +215,14 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
               onClick={() => setUserMenuOpen((open) => !open)}
               title="Buka menu akun"
             >
-              <label className="backoffice-avatar" title="Ganti foto profil">
+              <div className="backoffice-avatar">
                 {operator?.avatarUrl ? <img src={operator.avatarUrl} alt="" /> : (operator?.name?.slice(0, 2).toUpperCase() || "TB")}
-                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={changeAvatar} disabled={avatarSaving} />
-              </label>
+              </div>
               <span><b>{operator?.name || "Operator"}</b><small>{operator?.role || "Memuat..."}</small></span>
             </button>
             {userMenuOpen && (
               <div className="backoffice-account-menu" role="menu">
+                <Link href="/pengaturan#profil" role="menuitem" onClick={() => setUserMenuOpen(false)}><span>⚙</span>Setting</Link>
                 <button type="button" onClick={logout} role="menuitem"><span>↪</span>Keluar</button>
               </div>
             )}

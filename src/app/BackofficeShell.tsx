@@ -221,7 +221,7 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
       </aside>
       <section className="backoffice-content">
         <button className="theme-toggle theme-toggle-top" type="button" onClick={toggleTheme} title={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"} aria-label={darkMode ? "Gunakan tema terang" : "Gunakan tema gelap"}>
-          <span aria-hidden="true">{darkMode ? "☀" : "☾"}</span><b>{darkMode ? "Tema terang" : "Tema gelap"}</b>
+          <span aria-hidden="true">{darkMode ? "☀" : "☾"}</span>
         </button>
         {children}
       </section>

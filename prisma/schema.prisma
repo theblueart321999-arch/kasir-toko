@@ -122,6 +122,7 @@ model Operator {
   username     String    @unique
   googleId     String?      @unique
   email        String?      @unique
+  avatarUrl    String?      @db.Text
   passwordHash String
   role         Role      @default(KASIR)
   active       Boolean   @default(true)

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth";
 import { getGoogleOAuthConfig } from "@/lib/google-oauth";
 
-type GoogleProfile = { sub?: string; email?: string; name?: string };
+type GoogleProfile = { sub?: string; email?: string; name?: string; picture?: string };
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -34,14 +34,14 @@ export async function GET(request: Request) {
       operator = await prisma.$transaction(async (tx) => {
         const account = await tx.account.create({ data: { name: `${storeName}-${Date.now()}` } });
         const workspace = await tx.workspace.create({ data: { name: storeName, account: { connect: { id: account.id } } } });
-        const created = await tx.operator.create({ data: { name: profile.name || email.split("@")[0], username: email, email, googleId: profile.sub, passwordHash: randomBytes(32).toString("hex"), role: "OWNER", accountId: account.id } });
+        const created = await tx.operator.create({ data: { name: profile.name || email.split("@")[0], username: email, email, googleId: profile.sub, avatarUrl: profile.picture || null, passwordHash: randomBytes(32).toString("hex"), role: "OWNER", accountId: account.id } });
         await tx.workspace.update({ where: { id: workspace.id }, data: { ownerId: created.id } });
         await tx.operatorWorkspace.create({ data: { operatorId: created.id, workspaceId: workspace.id, role: "OWNER" } });
         await tx.storeSetting.create({ data: { storeName, accountId: account.id } });
         return created;
       });
-    } else if (!operator.googleId || !operator.email) {
-      operator = await prisma.operator.update({ where: { id: operator.id }, data: { googleId: profile.sub, email } });
+    } else if (!operator.googleId || !operator.email || (!operator.avatarUrl && profile.picture)) {
+      operator = await prisma.operator.update({ where: { id: operator.id }, data: { googleId: profile.sub, email, ...(operator.avatarUrl ? {} : { avatarUrl: profile.picture || null }) } });
     }
     await createSession(operator.id);
     return NextResponse.redirect(new URL("/dashboard", request.url));

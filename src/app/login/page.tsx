@@ -12,9 +12,6 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const googleError = searchParams.get("error");
-  function loginGoogle() {
-    window.location.href = "/api/auth/google";
-  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -46,7 +43,7 @@ function LoginForm() {
         {(error || googleError) && <p className="text-sm text-red-600" role="alert">{error || (googleError === "google_config" ? "Login Google belum dikonfigurasi oleh administrator." : googleError === "google_state" ? "Sesi Google tidak valid. Silakan coba lagi." : "Login Google gagal. Silakan coba lagi.")}</p>}
         <button disabled={loading} className="w-full rounded bg-slate-900 px-4 py-2 font-medium text-white disabled:opacity-50">{loading ? "Memproses..." : "Masuk"}</button>
         <div className="flex items-center gap-3 text-xs text-slate-400"><span className="h-px flex-1 bg-slate-200" />atau<span className="h-px flex-1 bg-slate-200" /></div>
-        <button type="button" onClick={loginGoogle} className="flex w-full items-center justify-center gap-2 rounded border border-slate-300 px-4 py-2 font-medium text-slate-700"><span aria-hidden="true" className="text-base font-bold text-blue-600">G</span> Masuk dengan Google</button>
+        <a href="/api/auth/google" className="flex w-full items-center justify-center gap-2 rounded border border-slate-300 px-4 py-2 font-medium text-slate-700"><span aria-hidden="true" className="text-base font-bold text-blue-600">G</span> Masuk dengan Google</a>
         <p className="text-center text-sm text-slate-500">Belum punya akun? <a className="font-semibold text-slate-900 underline" href="/daftar">Daftar sekarang</a></p>
       </form>
     </main>

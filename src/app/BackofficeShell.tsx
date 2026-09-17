@@ -45,9 +45,9 @@ const groups = [
     { href: "/piutang", icon: "↗", label: "Piutang dari Customer" }, { href: "/hutang", icon: "↙", label: "Hutang kepada Supplier" },
   ] },
   { label: "Sistem", items: [
-    { href: "/pengaturan#pajak", icon: "%", label: "Pengaturan Pajak" },
+    { href: "/pengaturan#pajak", icon: "%", label: "Pajak" },
     { href: "/pengaturan#struk", icon: "▥", label: "Footer Struk" }, { href: "/pengaturan#operator", icon: "♙", label: "Operator & Akses" },
-    { href: "/dashboard#bantuan", icon: "?", label: "Pusat Bantuan" },
+    { href: "/dashboard#bantuan", icon: "?", label: "Bantuan" },
   ] },
 ];
 

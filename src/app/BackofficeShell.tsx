@@ -183,9 +183,10 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
           }}
         >
           <svg className="sidebar-toggle-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="3" y="4" width="18" height="16" rx="2" />
-            <path d="M9 4v16" />
-            <path d={collapsed ? "m10 8 4 4-4 4" : "m14 8-4 4 4 4"} />
+            <rect className="sidebar-toggle-line" x="9" y="3" width="13" height="3" rx="1.5" />
+            <rect className="sidebar-toggle-line" x="9" y="10.5" width="13" height="3" rx="1.5" />
+            <rect className="sidebar-toggle-line" x="9" y="18" width="13" height="3" rx="1.5" />
+            <path className="sidebar-toggle-arrow" d={collapsed ? "m3 12 6-5v10l-6-5Z" : "m21 12-6-5v10l6-5Z"} />
           </svg>
         </button>
         <nav ref={navRef} className="backoffice-nav" aria-label="Menu aplikasi">

@@ -82,12 +82,13 @@ Buka `http://localhost:3000`.
      untuk data production.
 
 4. Deploy. Vercel akan menjalankan `vercel-build`, yang otomatis meng-generate Prisma
-Client lalu membuat production build. Jalankan sinkronisasi schema terhadap database
-production sebelum deploy pertama:
+Client, menyinkronkan schema ke database production, lalu membuat production build.
+Pastikan `DATABASE_URL` sudah diisi di environment **Production** sebelum deployment.
+Untuk sinkronisasi manual, jalankan:
 
 ```powershell
-npx prisma db push
 npx prisma generate
+npx prisma db push
 ```
 
 Untuk production dengan migration history, gunakan migration yang sudah direview

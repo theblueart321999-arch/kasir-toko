@@ -13,7 +13,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:setup": "npm run db:generate && npm run db:push && npm run db:migrate-tenancy && npm run db:seed",
     "backup": "tsx scripts/backup.ts",
-    "vercel-build": "npm run db:generate && npm run build"
+    "vercel-build": "npm run db:generate && npm run db:push && npm run build"
   },
   "dependencies": {
     "@prisma/client": "^6.16.1",

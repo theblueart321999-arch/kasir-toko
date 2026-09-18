@@ -5,6 +5,8 @@ import { getGoogleOAuthConfig } from "@/lib/google-oauth";
 export async function GET() {
   try {
     await prisma.$queryRaw`SELECT 1`;
+    await prisma.operator.count();
+    await prisma.session.count();
     return NextResponse.json({ status: "ok", database: "connected", googleOAuth: getGoogleOAuthConfig() ? "configured" : "not_configured" });
   } catch {
     return NextResponse.json({ status: "error", database: "unavailable" }, { status: 503 });

@@ -9,10 +9,9 @@ type Notification = { id: string; severity: "OVERDUE" | "DUE_SOON" | "WARNING"; 
 const groups = [
   { label: "Navigasi", items: [
     { href: "/dashboard", icon: "⌂", label: "Dashboard" }, { href: "/", icon: "▣", label: "Kasir" },
-    { href: "/riwayat-penjualan", icon: "↗", label: "Riwayat Penjualan" },
   ] },
   { label: "Transaksi", items: [
-    { href: "/pembelian", icon: "⇩", label: "Pembelian Baru" }, { href: "/pembelian/riwayat", icon: "◷", label: "Riwayat Pembelian" },
+    { href: "/pembelian", icon: "⇩", label: "Pembelian Baru" },
     { href: "/pembelian/retur", icon: "↪", label: "Retur Pembelian" }, { href: "/retur-penjualan", icon: "↩", label: "Retur Penjualan" },
   ] },
   { label: "Produk", items: [

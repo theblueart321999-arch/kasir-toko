@@ -141,3 +141,27 @@ Contoh body transaksi:
 npm run lint
 npm run build
 ```
+
+# Project Tani Bangun
+
+## 🚀 Environment Setup
+Proyek ini menggunakan dua koneksi database untuk proses pengembangan dan migrasi data:
+
+- **Database Lokal (Source):** `DATABASE_URL` di file `.env`
+  - Connection: `postgresql://tanibangun:tanibangun@127.0.0.1:5433/tanibangun?schema=public`
+- **Database Online (Target - Neon.tech):** `DATABASE_URL_ONLINE` di file `.env.local`
+  - Connection: Neon Serverless Postgres (`postgresql://<user>:<password>@<neon-host>:5432/<dbname>?sslmode=require`)
+
+> **Catatan untuk AI Agent:** Selalu gunakan **Direct Connection URL** dari Neon (bukan Pooled/PgBouncer URL) saat melakukan migrasi skema, `prisma db push`, atau perintah `pg_dump`/`psql`.
+
+---
+
+## 🔄 Database Migration Guide (for AI Agents & Developers)
+
+Panduan bagi AI Agent / CLI untuk menyalin/backup data dari PostgreSQL lokal ke Neon Online.
+
+### Option A: Menggunakan Prisma ORM (Rekomendasi)
+Jika proyek menggunakan Prisma, AI Agent dapat mengeksekusi push skema secara langsung ke Neon:
+```bash
+# Menimpa variabel DATABASE_URL sementara menggunakan URL dari .env.local
+DATABASE_URL=$DATABASE_URL_ONLINE npx prisma db push

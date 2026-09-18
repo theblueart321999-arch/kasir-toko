@@ -17,35 +17,29 @@ const groups = [
   ] },
   { label: "Produk", items: [
     { href: "/produk", icon: "▦", label: "Data Produk" }, { href: "/produk/kategori", icon: "▧", label: "Kategori Produk" },
-    { href: "/produk/level-harga", icon: "◇", label: "Level Harga" },
-    { href: "/produk#diskon", icon: "%", label: "Diskon Produk" },
+    { href: "/produk/level-harga", icon: "◇", label: "Level Harga" }, { href: "/produk/diskon", icon: "%", label: "Diskon Produk" },
   ] },
   { label: "Inventori", items: [
-    { href: "/stok", icon: "◫", label: "Data Stok" }, { href: "/stok#stok-masuk", icon: "⇧", label: "Stok Masuk" },
-    { href: "/stok#stok-keluar", icon: "⇩", label: "Stok Keluar" }, { href: "/stok#penyesuaian", icon: "±", label: "Penyesuaian Stok" },
-    { href: "/stok/riwayat", icon: "◷", label: "Riwayat Stok" }, { href: "/stok#menipis", icon: "!", label: "Stok Menipis" }, 
+    { href: "/stok", icon: "◫", label: "Data Stok" },
+    { href: "/stok/riwayat", icon: "◷", label: "Riwayat Stok" }, { href: "/stok/menipis", icon: "!", label: "Stok Menipis" }, 
   ] },
   { label: "Kontak", items: [
-    { href: "/kontak", icon: "◎", label: "Customer & Supplier" }, { href: "/kontak#customer", icon: "●", label: "Data Customer" },
-    { href: "/kontak#supplier", icon: "◉", label: "Data Supplier" },
-    { href: "/kontak#catatan", icon: "▱", label: "Catatan Kontak" },
+    { href: "/kontak", icon: "◎", label: "Customer & Supplier" },
   ] },
   { label: "Keuangan", items: [
-    { href: "/keuangan", icon: "Rp", label: "Cashbox" }, { href: "/keuangan#bank", icon: "▤", label: "Akun Bank" },
-    { href: "/keuangan#arus-kas", icon: "↕", label: "Arus Uang" }, { href: "/keuangan#pemasukan", icon: "+", label: "Pemasukan" },
-    { href: "/keuangan#pengeluaran", icon: "−", label: "Pengeluaran" },
+    { href: "/keuangan/bank", icon: "▤", label: "Akun Uang Kas" },
+    { href: "/keuangan/atur-uang", icon: "↕", label: "Atur Uang Kas" },
+    { href: "/keuangan/arus-kas", icon: "◷", label: "Arus Kas" },
   ] },
   { label: "Laporan", items: [
-    { href: "/laporan", icon: "▤", label: "Laporan" }, { href: "/laporan#penjualan", icon: "▥", label: "Laporan Penjualan" },
-    { href: "/laporan#pembelian", icon: "▥", label: "Laporan Pembelian" }, { href: "/laporan#retur", icon: "↩", label: "Laporan Retur" },
-    { href: "/laporan#terlaris", icon: "★", label: "Produk Terlaris" }, { href: "/laporan#arus-uang", icon: "↕", label: "Laporan Arus Uang" },
-    { href: "/laporan#stok-menipis", icon: "!", label: "Laporan Stok Menipis" }, { href: "/saldo", icon: "◉", label: "Laporan Saldo" },
+    { href: "/laporan", icon: "▤", label: "Laporan Kas" }, { href: "/laporan/penjualan", icon: "▥", label: "Laporan Penjualan" },
+    { href: "/laporan/pembelian", icon: "▥", label: "Laporan Pembelian" }, { href: "/laporan/retur", icon: "↩", label: "Laporan Retur" },
+    { href: "/laporan/produk-terlaris", icon: "★", label: "Produk Terlaris" },
     { href: "/piutang", icon: "↗", label: "Piutang dari Customer" }, { href: "/hutang", icon: "↙", label: "Hutang kepada Supplier" },
   ] },
   { label: "Sistem", items: [
-    { href: "/pengaturan#pajak", icon: "%", label: "Pajak" },
-    { href: "/pengaturan#struk", icon: "▥", label: "Footer Struk" }, { href: "/pengaturan#operator", icon: "♙", label: "Operator & Akses" },
-    { href: "/dashboard#bantuan", icon: "?", label: "Bantuan" },
+    { href: "/operator", icon: "♙", label: "Operator & Akses" },
+    { href: "/bantuan", icon: "?", label: "Bantuan" },
   ] },
 ];
 
@@ -137,7 +131,13 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
     }).catch(() => undefined);
     void loadNotifications();
     const timer = window.setInterval(loadNotifications, 60_000);
-    return () => window.clearInterval(timer);
+    window.addEventListener("inventory-change", loadNotifications);
+    window.addEventListener("focus", loadNotifications);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("inventory-change", loadNotifications);
+      window.removeEventListener("focus", loadNotifications);
+    };
   }, [publicPage]);
 
   useEffect(() => {
@@ -218,6 +218,13 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
     window.localStorage.setItem("tanibangun-sidebar-collapsed", "true");
   }
 
+  function openSidebarFromBrandClick() {
+    setUserMenuOpen(false);
+    if (pinned) return;
+    setCollapsed(false);
+    window.localStorage.setItem("tanibangun-sidebar-collapsed", "false");
+  }
+
   function togglePinned() {
     const next = !pinned;
     window.localStorage.setItem("tanibangun-sidebar-pinned", String(next));
@@ -260,7 +267,7 @@ export default function BackofficeShell({ children }: { children: React.ReactNod
             <rect className="sidebar-toggle-line" x="3" y="17" width="18" height="3" rx="1.5" />
           </svg>
         </button>
-        <Link className="backoffice-brand" href="/dashboard" onClick={closeSidebarAfterBrandClick} title="Dashboard">
+        <Link className="backoffice-brand" href="/dashboard" onClick={openSidebarFromBrandClick} title="Dashboard">
           <span className="backoffice-brand-mark" aria-hidden="true"><i>K</i><i>T</i></span>
           <span className="backoffice-brand-name"><b>Kasir Toko</b></span>
         </Link>

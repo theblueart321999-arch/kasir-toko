@@ -57,7 +57,8 @@ export async function GET(request: Request) {
     }
     await createSession(operator.id);
     return NextResponse.redirect(new URL("/dashboard", request.url));
-  } catch {
+  } catch (error) {
+    console.error("Google OAuth callback failed", error);
     return NextResponse.redirect(new URL("/login?error=google_failed", request.url));
   }
 }

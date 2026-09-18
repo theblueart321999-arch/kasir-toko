@@ -11,7 +11,7 @@ const modules = [
   { href: "/pembelian", icon: "⇩", title: "Pembelian", description: "Penerimaan dan retur supplier" },
   { href: "/kontak", icon: "◎", title: "Customer & Supplier", description: "Kelola data relasi toko" },
   { href: "/laporan", icon: "⌁", title: "Laporan", description: "Lihat performa penjualan" },
-  { href: "/keuangan", icon: "Rp", title: "Keuangan", description: "Kelola kasbox dan arus uang" },
+  { href: "/keuangan/bank", icon: "Rp", title: "Akun Uang Kas", description: "Kelola akun uang kas toko" },
   { href: "/pengaturan", icon: "⚙", title: "Pengaturan", description: "Atur toko dan operasional" },
 ];
 

@@ -11,7 +11,7 @@ export async function GET() {
         orderBy: { name: "asc" },
         include: { fromMovements: { select: { amount: true } }, toMovements: { select: { amount: true } } },
       }),
-      prisma.product.findMany({ select: { id: true, name: true, stock: true, price: true } }),
+      prisma.product.findMany({ select: { id: true, name: true, stock: true, costPrice: true } }),
       prisma.purchase.findMany({
         where: { status: "COMPLETED", paymentStatus: { in: ["UNPAID", "PARTIAL"] } },
         orderBy: { createdAt: "asc" },
@@ -26,7 +26,7 @@ export async function GET() {
     }));
     const debt = unpaidPurchases.reduce((sum, purchase) => sum + purchase.total, 0) + payables.reduce((sum, item) => sum + item.amount - item.paidAmount, 0);
     const receivable = receivables.reduce((sum, item) => sum + item.amount - item.paidAmount, 0);
-    const productValue = products.reduce((sum, product) => sum + product.stock * product.price, 0);
+    const productValue = products.reduce((sum, product) => sum + product.stock * product.costPrice, 0);
     const cash = accountBalances.reduce((sum, account) => sum + account.balance, 0);
     return NextResponse.json({
       summary: { debt, receivable, productValue, cash, total: cash + receivable + productValue - debt },

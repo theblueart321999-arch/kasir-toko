@@ -21,13 +21,19 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   if (!(await permitted())) return NextResponse.json({ error: "Anda tidak memiliki izin mengelola tingkat harga" }, { status: 403 });
   const input = await request.json().catch(() => null) as { productId?: unknown; discountPercent?: unknown; action?: unknown } | null;
+  if (input?.action === "resetDiscount") {
+    if (!Number.isInteger(input.productId)) return NextResponse.json({ error: "Produk tidak valid" }, { status: 400 });
+    try {
+      return NextResponse.json(await prisma.product.update({ where: { id: input.productId as number }, data: { discountPercent: 0 }, select: { id: true, discountPercent: true } }));
+    } catch { return NextResponse.json({ error: "Diskon default gagal dipulihkan" }, { status: 500 }); }
+  }
   if (input?.action === "reset") {
     if (!Number.isInteger(input.productId)) return NextResponse.json({ error: "Produk tidak valid" }, { status: 400 });
     try {
       const current = await prisma.product.findUnique({ where: { id: input.productId as number }, select: { price: true, defaultPrice: true } });
       if (!current) return NextResponse.json({ error: "Produk tidak ditemukan" }, { status: 404 });
       const defaultPrice = current.defaultPrice ?? current.price;
-      return NextResponse.json(await prisma.product.update({ where: { id: input.productId as number }, data: { price: defaultPrice, defaultPrice }, select: { id: true, price: true, defaultPrice: true } }));
+      return NextResponse.json(await prisma.product.update({ where: { id: input.productId as number }, data: { price: defaultPrice, defaultPrice, discountPercent: 0 }, select: { id: true, price: true, defaultPrice: true, discountPercent: true } }));
     } catch { return NextResponse.json({ error: "Harga default gagal dipulihkan" }, { status: 500 }); }
   }
   if (!input || !Number.isInteger(input.productId) || typeof input.discountPercent !== "number" || input.discountPercent < 0 || input.discountPercent > 100) return NextResponse.json({ error: "Produk dan diskon harus valid (0-100)" }, { status: 400 });

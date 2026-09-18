@@ -10,17 +10,17 @@ function dateValue(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
-function rangeFor(period: Period, customFrom: string, customTo: string) {
+function rangeFor(period: Period, customFrom: string, customTo: string, month: number, year: number) {
   const to = new Date();
   const from = new Date(to);
   if (period === "day") from.setDate(from.getDate());
   if (period === "week") from.setDate(from.getDate() - 6);
-  if (period === "month") from.setDate(from.getDate() - 29);
-  if (period === "year") from.setMonth(from.getMonth() - 11);
+  if (period === "month") return { from: `${year}-${String(month).padStart(2, "0")}-01`, to: dateValue(new Date(year, month, 0)), group: "day" };
+  if (period === "year") return { from: `${year}-01-01`, to: `${year}-12-31`, group: "month" };
   return {
     from: period === "custom" ? customFrom : dateValue(from),
     to: period === "custom" ? customTo : dateValue(to),
-    group: period === "year" ? "month" : "day",
+    group: "day",
   };
 }
 
@@ -41,13 +41,15 @@ export default function SalesChart({ initialPoints, onRangeChange, rangeOverride
   const [internalPeriod, setInternalPeriod] = useState<Period>("week");
   const [internalFrom, setInternalFrom] = useState(today);
   const [internalTo, setInternalTo] = useState(today);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const period = controlledPeriod ?? internalPeriod;
   const customFrom = controlledFrom ?? internalFrom;
   const customTo = controlledTo ?? internalTo;
   const [points, setPoints] = useState(initialPoints);
 
   useEffect(() => {
-    const range = rangeOverride ?? rangeFor(period, customFrom, customTo);
+    const range = rangeOverride ?? rangeFor(period, customFrom, customTo, selectedMonth, selectedYear);
     if (period === "custom" && (!customFrom || !customTo || customFrom > customTo)) return;
     onRangeChange?.(range);
     const controller = new AbortController();
@@ -59,7 +61,7 @@ export default function SalesChart({ initialPoints, onRangeChange, rangeOverride
       .then((data) => setPoints(data.points))
       .catch((error: unknown) => { if ((error as Error).name !== "AbortError") setPoints([]); })
     return () => controller.abort();
-  }, [period, customFrom, customTo, onRangeChange, rangeOverride]);
+  }, [period, customFrom, customTo, onRangeChange, rangeOverride, selectedMonth, selectedYear]);
 
   const format = (value: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value);
   const max = Math.max(...points.map((point) => point.total), 1);
@@ -78,6 +80,10 @@ export default function SalesChart({ initialPoints, onRangeChange, rangeOverride
         ))}
       </div>}
       {showControls && period === "custom" && <div className="chart-custom-range"><label>Dari<input type="date" value={customFrom} onChange={(event) => { setInternalFrom(event.target.value); onCustomRangeChange?.(event.target.value, customTo); }} /></label><label>Sampai<input type="date" value={customTo} onChange={(event) => { setInternalTo(event.target.value); onCustomRangeChange?.(customFrom, event.target.value); }} /></label></div>}
+      {showControls && (period === "month" || period === "year") && <div className="report-period-selectors chart-period-selectors">
+        {period === "month" && <label>Bulan<select value={selectedMonth} onChange={(event) => setSelectedMonth(Number(event.target.value))}>{Array.from({ length: 12 }, (_, index) => <option key={index + 1} value={index + 1}>{new Intl.DateTimeFormat("id-ID", { month: "long" }).format(new Date(2020, index, 1))}</option>)}</select></label>}
+        <label>Tahun<select value={selectedYear} onChange={(event) => setSelectedYear(Number(event.target.value))}>{Array.from({ length: 12 }, (_, index) => <option key={selectedYear - index} value={selectedYear - index}>{selectedYear - index}</option>)}</select></label>
+      </div>}
       <div className="sales-chart">
         <div className="sales-chart-y-axis"><span>{format(max)}</span><span>{format(max / 2)}</span><span>Rp0</span></div>
         <div className="sales-chart-area">

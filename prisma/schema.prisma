@@ -435,6 +435,7 @@ model CashAccount {
   id             Int             @id @default(autoincrement())
   name           String          @unique
   type           String          @default("CASH")
+  sortOrder      Int             @default(0)
   openingBalance Int             @default(0)
   active         Boolean         @default(true)
   createdAt      DateTime        @default(now())

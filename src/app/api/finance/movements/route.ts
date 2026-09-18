@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
   try {
     const accounts = await prisma.cashAccount.findMany({ where: { id: { in: [fromAccountId, toAccountId].filter((id): id is number => id !== null) }, active: true }, select: { id: true } });
     if (accounts.length !== new Set([fromAccountId, toAccountId].filter((id): id is number => id !== null)).size) return NextResponse.json({ error: "Akun tidak ditemukan atau tidak aktif" }, { status: 400 });
-    return NextResponse.json(await prisma.moneyMovement.create({ data: { type, amount: body.amount as number, fromAccountId, toAccountId, operatorId: operator.id, note: typeof body.note === "string" ? body.note.trim() || null : null, reference: typeof body.reference === "string" ? body.reference.trim() || null : null }, include: { fromAccount: true, toAccount: true } }), { status: 201 });
+    return NextResponse.json(await prisma.moneyMovement.create({ data: { type, amount: body.amount as number, fromAccountId, toAccountId, operatorId: operator.id, note: typeof body.note === "string" ? body.note.trim() || `Arus kas ${new Date().toLocaleString("id-ID")}` : `Arus kas ${new Date().toLocaleString("id-ID")}`, reference: typeof body.reference === "string" ? body.reference.trim() || null : null }, include: { fromAccount: true, toAccount: true } }), { status: 201 });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) return NextResponse.json({ error: "Arus uang tidak dapat disimpan" }, { status: 409 });
     return NextResponse.json({ error: "Arus uang gagal disimpan" }, { status: 500 });

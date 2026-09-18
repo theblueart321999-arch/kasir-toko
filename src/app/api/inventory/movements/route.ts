@@ -41,9 +41,14 @@ export async function POST(request: NextRequest) {
   const quantity = input.quantity;
   const targetStock = input.targetStock;
   const type = input.type;
+  const adjustmentDirection = input.adjustmentDirection;
   const note = typeof input.note === "string" ? input.note.trim() : null;
   const reference = typeof input.reference === "string" ? input.reference.trim() : null;
-  if (!Number.isInteger(productId) || typeof type !== "string" || !movementTypes.has(type as StockMovementType) || (type === StockMovementType.ADJUSTMENT ? (!Number.isInteger(targetStock) || (targetStock as number) < 0 || !note) : (!Number.isInteger(quantity) || (quantity as number) <= 0))) {
+  const validAdjustment = type === StockMovementType.ADJUSTMENT && (
+    (Number.isInteger(targetStock) && (targetStock as number) >= 0 && Boolean(note)) ||
+    (adjustmentDirection === "IN" || adjustmentDirection === "OUT") && Number.isInteger(quantity) && (quantity as number) > 0 && Boolean(note)
+  );
+  if (!Number.isInteger(productId) || typeof type !== "string" || !movementTypes.has(type as StockMovementType) || (type === StockMovementType.ADJUSTMENT ? !validAdjustment : (!Number.isInteger(quantity) || (quantity as number) <= 0))) {
     return NextResponse.json({ error: "productId, type, dan quantity positif wajib valid" }, { status: 400 });
   }
 
@@ -52,7 +57,7 @@ export async function POST(request: NextRequest) {
       const product = await tx.product.findUnique({ where: { id: productId as number } });
       if (!product) throw new Error("Produk tidak ditemukan");
       const delta = type === StockMovementType.ADJUSTMENT
-        ? (targetStock as number) - product.stock
+        ? Number.isInteger(targetStock) ? (targetStock as number) - product.stock : adjustmentDirection === "OUT" ? -(quantity as number) : quantity as number
         : type === StockMovementType.OUT ? -(quantity as number) : quantity as number;
       const movementQuantity = type === StockMovementType.ADJUSTMENT ? Math.abs(delta) : quantity as number;
       if (type === StockMovementType.ADJUSTMENT && delta === 0) throw new Error("Jumlah stok tidak berubah");

@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { getCurrentOperator } from "@/lib/auth";
-import FinanceManager from "./FinanceManager";
+import FinanceManager from "../FinanceManager";
 
-export default async function FinancePage() {
+export default async function BankAccountsPage() {
   const operator = await getCurrentOperator();
   if (!operator) redirect("/login");
-  return <FinanceManager />;
+  return <FinanceManager view="bank" />;
 }

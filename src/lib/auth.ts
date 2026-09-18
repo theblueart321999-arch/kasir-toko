@@ -49,6 +49,26 @@ export async function getCurrentOperator() {
   return operator;
 }
 
+export async function refreshCurrentSession() {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!token) return false;
+  const session = await prisma.session.findUnique({
+    where: { tokenHash: hashSessionToken(token) },
+    select: { id: true, expiresAt: true },
+  });
+  if (!session || session.expiresAt <= new Date()) return false;
+  const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
+  await prisma.session.update({ where: { id: session.id }, data: { expiresAt } });
+  (await cookies()).set(SESSION_COOKIE, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: SESSION_DURATION_MS / 1000,
+  });
+  return true;
+}
+
 export async function deleteCurrentSession() {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;

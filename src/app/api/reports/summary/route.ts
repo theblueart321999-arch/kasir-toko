@@ -11,6 +11,7 @@ function dates(request: NextRequest) {
   const toParam = request.nextUrl.searchParams.get("to");
 
   const todayStr = new Date().toISOString().slice(0, 10);
+
   const from = fromParam || todayStr;
   const to = toParam || from;
 
@@ -40,8 +41,12 @@ function dates(request: NextRequest) {
 export async function GET(request: NextRequest) {
   if (!(await getCurrentOperator())) {
     return NextResponse.json(
-      { error: "Autentikasi diperlukan" },
-      { status: 401 }
+      {
+        error: "Autentikasi diperlukan",
+      },
+      {
+        status: 401,
+      }
     );
   }
 
@@ -54,7 +59,9 @@ export async function GET(request: NextRequest) {
       {
         error: "Format tanggal harus YYYY-MM-DD dan from <= to",
       },
-      { status: 400 }
+      {
+        status: 400,
+      }
     );
   }
 
@@ -146,7 +153,7 @@ export async function GET(request: NextRequest) {
       }),
 
       // =========================
-      // MUTASI UANG (AGREGASI)
+      // MUTASI UANG
       // =========================
       prisma.moneyMovement.groupBy({
         by: ["type"],
@@ -319,7 +326,7 @@ export async function GET(request: NextRequest) {
       }),
 
       // =========================
-      // DETAIL MUTASI UANG (UNTUK OPERATOR)
+      // DETAIL MUTASI UANG
       // =========================
       prisma.moneyMovement.findMany({
         where: {
@@ -360,13 +367,28 @@ export async function GET(request: NextRequest) {
     ]);
 
     // ==========================================
-    // LOG DEBUGGING UNTUK MELIHAT DATA DARI SERVER
+    // DEBUG
     // ==========================================
     console.log("=== DEBUG SUMMARY REPORT ===");
-    console.log("1. Param Tanggal Raw:", range.rawFrom, "s/d", range.rawTo);
+    console.log(
+      "1. Param Tanggal Raw:",
+      range.rawFrom,
+      "s/d",
+      range.rawTo
+    );
+
     console.log("2. Query Date Range (UTC):", where);
-    console.log("3. Raw Movements GroupBy:", JSON.stringify(movements, null, 2));
-    console.log("4. Movement Rows (Detail):", JSON.stringify(movementRows, null, 2));
+
+    console.log(
+      "3. Raw Movements GroupBy:",
+      JSON.stringify(movements, null, 2)
+    );
+
+    console.log(
+      "4. Movement Rows:",
+      JSON.stringify(movementRows, null, 2)
+    );
+
     console.log("============================");
 
     // =========================
@@ -387,30 +409,67 @@ export async function GET(request: NextRequest) {
     });
 
     // =========================
+    // TOTAL PENJUALAN
+    // =========================
+    const salesTotal = sales._sum.total ?? 0;
+
+    // =========================
     // HITUNG HPP
     // =========================
-    const costOfGoodsSold = saleItemsForProfit.reduce((total, item) => {
-      return total + item.quantity * (item.product?.costPrice ?? 0);
-    }, 0);
+    const costOfGoodsSold = saleItemsForProfit.reduce(
+      (total, item) => {
+        return (
+          total +
+          item.quantity * (item.product?.costPrice ?? 0)
+        );
+      },
+      0
+    );
 
     // =========================
     // LABA KOTOR
     // =========================
-    const salesTotal = sales._sum.total ?? 0;
-    const estimatedProfit = salesTotal - costOfGoodsSold;
+    const estimatedProfit =
+      salesTotal - costOfGoodsSold;
 
     // =========================
-    // MUTASI UANG (PEMASUKAN & PENGELUARAN)
+    // MUTASI UANG
     // =========================
-    const income =
+
+    // Total semua pemasukan dari MoneyMovement
+    const totalMoneyIn =
       movements.find(
-        (item) => item.type === "IN" || item.type === ("in" as string)
+        (item) =>
+          item.type === "IN" ||
+          item.type === ("in" as string)
       )?._sum.amount ?? 0;
 
+    // Total semua pengeluaran dari MoneyMovement
     const expense =
       movements.find(
-        (item) => item.type === "OUT" || item.type === ("out" as string)
+        (item) =>
+          item.type === "OUT" ||
+          item.type === ("out" as string)
       )?._sum.amount ?? 0;
+
+    // =====================================================
+    // PEMASUKAN LAIN
+    // =====================================================
+    // Penjualan tidak boleh masuk ke Pemasukan Lain.
+    //
+    // Jika transaksi penjualan juga membuat MoneyMovement
+    // dengan type IN, maka total tersebut dikurangi total
+    // penjualan.
+    //
+    // Contoh:
+    // Penjualan       = 1.000.000
+    // MoneyMovement IN = 1.200.000
+    // Pemasukan Lain  =   200.000
+    //
+    const otherIncome = Math.max(
+      0,
+      totalMoneyIn - salesTotal
+    );
 
     // =========================
     // OPERATOR RANKING
@@ -418,32 +477,51 @@ export async function GET(request: NextRequest) {
     const operatorMap = new Map<string, number>();
 
     movementRows.forEach((row) => {
-      const operatorName = row.operator?.name || "Umum";
-      const current = operatorMap.get(operatorName) ?? 0;
-      const isExpense = row.type === "OUT" || row.type === ("out" as string);
+      const operatorName =
+        row.operator?.name || "Umum";
+
+      const current =
+        operatorMap.get(operatorName) ?? 0;
+
+      const isExpense =
+        row.type === "OUT" ||
+        row.type === ("out" as string);
 
       operatorMap.set(
         operatorName,
-        current + (isExpense ? -row.amount : row.amount)
+        current +
+          (isExpense ? -row.amount : row.amount)
       );
     });
 
     // =========================
     // GROUP BY TANGGAL
     // =========================
-    const byDate = (rows: { createdAt: Date; total: number }[]) => {
+    const byDate = (
+      rows: {
+        createdAt: Date;
+        total: number;
+      }[]
+    ) => {
       const result = new Map<string, number>();
 
       rows.forEach((row) => {
-        const key = row.createdAt.toISOString().slice(0, 10);
+        const key = row.createdAt
+          .toISOString()
+          .slice(0, 10);
 
-        result.set(key, (result.get(key) ?? 0) + row.total);
+        result.set(
+          key,
+          (result.get(key) ?? 0) + row.total
+        );
       });
 
-      return [...result].map(([date, total]) => ({
-        date,
-        total,
-      }));
+      return [...result].map(
+        ([date, total]) => ({
+          date,
+          total,
+        })
+      );
     };
 
     // =========================
@@ -452,17 +530,25 @@ export async function GET(request: NextRequest) {
     const ranking = (
       rows: {
         total: number;
-        customer?: { name: string } | null;
-        supplier?: { name: string } | null;
+        customer?: {
+          name: string;
+        } | null;
+        supplier?: {
+          name: string;
+        } | null;
       }[],
       key: "customer" | "supplier"
     ) => {
       const result = new Map<string, number>();
 
       rows.forEach((row) => {
-        const name = row[key]?.name || "Umum";
+        const name =
+          row[key]?.name || "Umum";
 
-        result.set(name, (result.get(name) ?? 0) + row.total);
+        result.set(
+          name,
+          (result.get(name) ?? 0) + row.total
+        );
       });
 
       return [...result]
@@ -470,90 +556,157 @@ export async function GET(request: NextRequest) {
           name,
           total,
         }))
-        .sort((a, b) => b.total - a.total)
+        .sort(
+          (a, b) => b.total - a.total
+        )
         .slice(0, 10);
     };
 
+    // =========================
+    // RESPONSE
+    // =========================
     return NextResponse.json({
       range: {
         from: range.rawFrom,
         to: range.rawTo,
       },
 
+      // =========================
       // PENJUALAN
+      // =========================
       sales: {
         total: salesTotal,
         count: sales._count._all,
       },
 
+      // =========================
       // PEMBELIAN
+      // =========================
       purchases: {
         total: purchases._sum.total ?? 0,
         count: purchases._count._all,
       },
 
+      // =========================
       // RETUR
+      // =========================
       returns: {
         sales: saleReturns._sum.total ?? 0,
         salesCount: saleReturns._count._all,
-        purchases: purchaseReturns._sum.total ?? 0,
-        purchasesCount: purchaseReturns._count._all,
+
+        purchases:
+          purchaseReturns._sum.total ?? 0,
+        purchasesCount:
+          purchaseReturns._count._all,
       },
 
+      // =========================
       // MUTASI UANG
+      // =========================
       movements: movements.map((m) => ({
         type: m.type,
         total: m._sum.amount ?? 0,
         count: m._count._all,
       })),
 
+      // =========================
       // KEUANGAN
+      // =========================
       financial: {
-        income,
+        // PENTING:
+        // Ini sekarang hanya pemasukan lain,
+        // bukan total penjualan.
+        income: otherIncome,
+
+        // Pengeluaran lain
         expense,
+
+        // Laba kotor penjualan
         estimatedProfit,
+
+        // HPP
         costOfGoodsSold,
       },
 
+      // =========================
       // OPERATOR
+      // =========================
       operatorRanking: [...operatorMap]
         .map(([name, total]) => ({
           name,
           total,
         }))
-        .sort((a, b) => b.total - a.total),
+        .sort(
+          (a, b) => b.total - a.total
+        ),
 
+      // =========================
       // GRAFIK
+      // =========================
       salesByDate: byDate(saleRows),
-      purchasesByDate: byDate(purchaseRows),
-      saleReturnsByDate: byDate(saleReturnRows),
-      purchaseReturnsByDate: byDate(purchaseReturnRows),
 
+      purchasesByDate:
+        byDate(purchaseRows),
+
+      saleReturnsByDate:
+        byDate(saleReturnRows),
+
+      purchaseReturnsByDate:
+        byDate(purchaseReturnRows),
+
+      // =========================
       // CUSTOMER & SUPPLIER
-      customerRanking: ranking(saleRows, "customer"),
-      supplierRanking: ranking(purchaseRows, "supplier"),
+      // =========================
+      customerRanking: ranking(
+        saleRows,
+        "customer"
+      ),
 
+      supplierRanking: ranking(
+        purchaseRows,
+        "supplier"
+      ),
+
+      // =========================
       // PEMBAYARAN
+      // =========================
       paymentBreakdown,
+
       purchasePaymentBreakdown,
 
+      // =========================
       // PRODUK TERLARIS
-      topProducts: topProducts.map((item) => ({
-        ...item,
-        product: products.find((p) => p.id === item.productId),
-      })),
+      // =========================
+      topProducts: topProducts.map(
+        (item) => ({
+          ...item,
 
+          product: products.find(
+            (p) =>
+              p.id === item.productId
+          ),
+        })
+      ),
+
+      // =========================
       // STOK MENIPIS
+      // =========================
       lowStock,
     });
   } catch (error) {
-    console.error("Laporan summary error:", error);
+    console.error(
+      "Laporan summary error:",
+      error
+    );
 
     return NextResponse.json(
       {
-        error: "Ringkasan laporan gagal diambil",
+        error:
+          "Ringkasan laporan gagal diambil",
       },
-      { status: 503 }
+      {
+        status: 503,
+      }
     );
   }
 }

@@ -52,7 +52,10 @@ export default function ReportsDashboard() {
     const query = `?from=${range.from}&to=${range.to}`;
     setReport(null);
     setOperations(null);
-    void Promise.all([fetch("/api/reports/balance", { cache: "no-store" }), fetch(`/api/reports/summary${query}`, { cache: "no-store" })])
+    void Promise.all([
+      fetch("/api/reports/balance", { cache: "no-store" }),
+      fetch(`/api/reports/summary${query}`, { cache: "no-store" }),
+    ])
       .then(async ([balanceResponse, operationsResponse]) => {
         const balanceJson = await balanceResponse.json();
         const operationsJson = await operationsResponse.json();
@@ -68,7 +71,13 @@ export default function ReportsDashboard() {
   if (!report || !operations) return <main className="balance-report-page"><p className="balance-report-loading">Memuat laporan kas...</p></main>;
 
   const { summary } = report;
-  const estimatedNet = operations.financial.estimatedProfit + operations.financial.income - operations.financial.expense;
+  
+  // Memastikan pemasukan non-penjualan bersih (jika seandainya di tingkat API masih tercampur, Anda bisa memfilternya di sini)
+  const nonSalesIncome = operations.financial.income;
+
+  // Logika Estimasi Laba Bersih: Laba Kotor + Pemasukan Non-Penjualan - Pengeluaran Operasional
+  const estimatedNet = operations.financial.estimatedProfit + nonSalesIncome - operations.financial.expense;
+
   return (
     <main className="balance-report-page">
       <header className="balance-report-header"><h1>Laporan Kas</h1></header>
@@ -76,10 +85,17 @@ export default function ReportsDashboard() {
 
       <section className="balance-report-metrics" aria-label="Ringkasan operasional">
         <article><span>OMSET</span><strong>{amount(operations.sales.total)}</strong><small>{operations.sales.count} transaksi</small></article>
-        <article><span>LABA</span><strong>{signedAmount(operations.financial.estimatedProfit)}</strong><small>Omset dikurangi pembelian</small></article>
-        <article><span>PEMASUKAN</span><strong>{amount(operations.financial.income)}</strong><small>Arus kas masuk</small></article>
-        <article><span>PENGELUARAN</span><strong>{amount(operations.financial.expense)}</strong><small>Arus kas keluar</small></article>
-        <article><span>ESTIMASI LABA BERSIH</span><strong>{signedAmount(estimatedNet)}</strong><small>Laba + pemasukan - pengeluaran</small></article>
+        
+        {/* Laba Kotor dari penjualan barang */}
+        <article><span>LABA KOTOR</span><strong>{signedAmount(operations.financial.estimatedProfit)}</strong><small>Omset dikurangi HPP</small></article>
+        
+        {/* HANYA MENAMPILKAN PENDAPATAN NON-PENJUALAN */}
+        <article><span>PEMASUKAN NON-PENJUALAN</span><strong>{amount(nonSalesIncome)}</strong><small>Pendapatan selain dari penjualan</small></article>
+        
+        <article><span>PENGELUARAN OPERASIONAL</span><strong>{amount(operations.financial.expense)}</strong><small>Arus kas keluar operasional</small></article>
+        
+        {/* Total akhir akumulasi laba kotor dan pendapatan non-penjualan */}
+        <article><span>ESTIMASI LABA BERSIH</span><strong>{signedAmount(estimatedNet)}</strong><small>Laba kotor + non-penjualan - pengeluaran</small></article>
       </section>
 
       <section className="balance-report-overview" aria-label="Ringkasan saldo">
@@ -90,8 +106,16 @@ export default function ReportsDashboard() {
 
       <section className="balance-report-card">
         <SectionTitle>KEUANGAN</SectionTitle>
-        {report.accounts.map((account) => <div className="balance-report-row" key={account.id}><div><b>{account.name.toUpperCase()}</b><small>Saldo akun uang kas</small></div><strong>{amount(account.balance)}</strong></div>)}
-        <div className="balance-report-row balance-report-total"><div><b>JUMLAH</b><small>Total seluruh akun uang kas</small></div><strong>{amount(summary.cash)}</strong></div>
+        {report.accounts.map((account) => (
+          <div className="balance-report-row" key={account.id}>
+            <div><b>{account.name.toUpperCase()}</b><small>Saldo akun uang kas</small></div>
+            <strong>{amount(account.balance)}</strong>
+          </div>
+        ))}
+        <div className="balance-report-row balance-report-total">
+          <div><b>JUMLAH</b><small>Total seluruh akun uang kas</small></div>
+          <strong>{amount(summary.cash)}</strong>
+        </div>
       </section>
 
       <section className="balance-report-card balance-report-total-card">
@@ -100,10 +124,34 @@ export default function ReportsDashboard() {
       </section>
 
       <section className="balance-report-detail-grid">
-        <div className="balance-report-card"><SectionTitle>DAFTAR TRANSAKSI OPERATOR</SectionTitle>{operations.operatorRanking.length ? operations.operatorRanking.map((operator) => <div className="balance-report-row" key={operator.name}><div><b>{operator.name}</b><small>Aktivitas arus kas</small></div><strong>{amount(operator.total)}</strong></div>) : <p className="balance-report-empty">Belum ada aktivitas operator.</p>}</div>
-        <div className="balance-report-card"><SectionTitle>PRODUK TERJUAL</SectionTitle>{operations.topProducts.length ? operations.topProducts.slice(0, 8).map((item) => <div className="balance-report-row" key={item.product?.sku || String(item._sum.quantity)}><div><b>{item.product?.name || "Produk"}</b><small>{item.product?.sku || "SKU tidak tersedia"}</small></div><strong>{item._sum.quantity ?? 0} unit</strong></div>) : <p className="balance-report-empty">Belum ada produk terjual.</p>}</div>
+        <div className="balance-report-card">
+          <SectionTitle>DAFTAR TRANSAKSI OPERATOR</SectionTitle>
+          {operations.operatorRanking.length ? (
+            operations.operatorRanking.map((operator) => (
+              <div className="balance-report-row" key={operator.name}>
+                <div><b>{operator.name}</b><small>Aktivitas arus kas</small></div>
+                <strong>{amount(operator.total)}</strong>
+              </div>
+            ))
+          ) : (
+            <p className="balance-report-empty">Belum ada aktivitas operator.</p>
+          )}
+        </div>
+        
+        <div className="balance-report-card">
+          <SectionTitle>PRODUK TERJUAL</SectionTitle>
+          {operations.topProducts.length ? (
+            operations.topProducts.slice(0, 8).map((item) => (
+              <div className="balance-report-row" key={item.product?.sku || String(item._sum.quantity)}>
+                <div><b>{item.product?.name || "Produk"}</b><small>{item.product?.sku || "SKU tidak tersedia"}</small></div>
+                <strong>{item._sum.quantity ?? 0} unit</strong>
+              </div>
+            ))
+          ) : (
+            <p className="balance-report-empty">Belum ada produk terjual.</p>
+          )}
+        </div>
       </section>
-
     </main>
   );
 }

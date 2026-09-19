@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import SalesChart from "./SalesChart";
 import DashboardPeriod from "./DashboardPeriod";
 import { periodRange, type ReportPeriod } from "../periodRange";
+import ReportsDashboard from "./ReportsDashboard";
 
 const modules = [
   { href: "/kasir", icon: "▣", title: "Kasir", description: "Buat transaksi penjualan baru" },
@@ -84,13 +85,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <Link className="dashboard-primary" href="/kasir">Buka Kasir <span>→</span></Link>
       </header>
       <SalesChart initialPoints={chartDays} />
-      <DashboardPeriod />
-      <section className="dashboard-primary-table-wrap" aria-label="Ringkasan keuangan">
+      <ReportsDashboard />
+      {/* <section className="dashboard-primary-table-wrap" aria-label="Ringkasan keuangan">
         <table className="dashboard-primary-table">
           <thead><tr><th>Omset</th><th>Laba</th><th>Pemasukan</th><th>Pengeluaran</th><th>Estimasi laba bersih</th></tr></thead>
           <tbody><tr><td><strong>{format(turnover)}</strong><small>{transactions ? "Penjualan selesai" : "Belum ada penjualan"}</small></td><td><strong>{format(profit)}</strong><small>Omset dikurangi pembelian</small></td><td><strong>{format(income)}</strong><small>Arus kas masuk</small></td><td><strong>{format(expense)}</strong><small>Arus kas keluar</small></td><td><strong>{format(netEstimate)}</strong><small>Laba + pemasukan - pengeluaran</small></td></tr></tbody>
         </table>
-      </section>
+      </section> */}
       <section className="dashboard-stats dashboard-balance-stats">
         <article><span>Hutang</span><strong>{format(debt)}</strong><small>Sisa kewajiban toko</small></article>
         <article><span>Piutang</span><strong>{format(receivable)}</strong><small>Sisa tagihan customer</small></article>

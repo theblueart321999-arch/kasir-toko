@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Category {
@@ -58,37 +59,35 @@ enum MoneyMovementType {
 }
 
 model Account {
-  id           Int       @id @default(autoincrement())
-  name         String
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  operators    Operator[]
-  products     Product[]
-  categories   ProductCategory[]
-  settings     StoreSetting[]
-  customers    Customer[]
-  suppliers    Supplier[]
-  purchases    Purchase[]
-  purchaseReturns PurchaseReturn[]
-  sales        Sale[]
-  saleReturns  SaleReturn[]
-  cashAccounts CashAccount[]
-  receivables  Receivable[]
-  payables     Payable[]
-  stockMovements StockMovement[]
-  moneyMovements MoneyMovement[]
-  purchaseItems PurchaseItem[]
+  id                  Int                  @id @default(autoincrement())
+  name                String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  operators           Operator[]
+  products            Product[]
+  categories          ProductCategory[]
+  settings            StoreSetting[]
+  customers           Customer[]
+  suppliers           Supplier[]
+  purchases           Purchase[]
+  purchaseReturns     PurchaseReturn[]
+  sales               Sale[]
+  saleReturns         SaleReturn[]
+  cashAccounts        CashAccount[]
+  receivables         Receivable[]
+  payables            Payable[]
+  stockMovements      StockMovement[]
+  moneyMovements      MoneyMovement[]
+  purchaseItems       PurchaseItem[]
   purchaseReturnItems PurchaseReturnItem[]
-  saleItems    SaleItem[]
-  saleReturnItems SaleReturnItem[]
-  workspaceId   Int?      @unique
-  workspace     Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  saleItems           SaleItem[]
+  saleReturnItems     SaleReturnItem[]
+  workspaceId         Int?                 @unique
+  workspace           Workspace?           @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
 
   @@unique([name])
 }
 
-/// A workspace is the tenant boundary. Account is retained as the legacy store
-/// record so existing data and APIs can be migrated without changing IDs.
 model Workspace {
   id          Int                 @id @default(autoincrement())
   name        String
@@ -117,27 +116,27 @@ model OperatorWorkspace {
 }
 
 model Operator {
-  id           Int       @id @default(autoincrement())
-  name         String
-  username     String    @unique
-  googleId     String?      @unique
-  email        String?      @unique
-  avatarUrl    String?      @db.Text
-  passwordHash String
-  role         Role      @default(KASIR)
-  active       Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  sessions     Session[]
-  stockMovements StockMovement[]
-  saleReturns  SaleReturn[]
-  purchases    Purchase[]
+  id              Int                 @id @default(autoincrement())
+  name            String
+  username        String              @unique
+  googleId        String?             @unique
+  email           String?             @unique
+  avatarUrl       String?             @db.Text
+  passwordHash    String
+  role            Role                @default(KASIR)
+  active          Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  sessions        Session[]
+  stockMovements  StockMovement[]
+  saleReturns     SaleReturn[]
+  purchases       Purchase[]
   purchaseReturns PurchaseReturn[]
-  moneyMovements MoneyMovement[]
-  accountId    Int?
-  account      Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
-  memberships  OperatorWorkspace[]
-  ownedWorkspaces Workspace[] @relation("WorkspaceOwner")
+  moneyMovements  MoneyMovement[]
+  accountId       Int?
+  account         Account?            @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  memberships     OperatorWorkspace[]
+  ownedWorkspaces Workspace[]         @relation("WorkspaceOwner")
 }
 
 model Session {
@@ -153,29 +152,29 @@ model Session {
 }
 
 model Product {
-  id         Int        @id @default(autoincrement())
-  sku        String     @unique
-  name       String
-  category   Category
-  categoryId Int?
-  price      Int
-  defaultPrice Int?
-  costPrice  Int        @default(0)
-  discountPercent Float    @default(0)
-  stock      Int        @default(0)
-  unit       String
-  imageUrl   String?
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  saleItems  SaleItem[]
-  categoryRef ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  stockMovements StockMovement[]
-  saleReturnItems SaleReturnItem[]
-  purchaseItems PurchaseItem[]
+  id                  Int                  @id @default(autoincrement())
+  sku                 String               @unique
+  name                String
+  category            Category
+  categoryId          Int?
+  price               Int
+  defaultPrice        Int?
+  costPrice           Int                  @default(0)
+  discountPercent     Float                @default(0)
+  stock               Int                  @default(0)
+  unit                String
+  imageUrl            String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  saleItems           SaleItem[]
+  categoryRef         ProductCategory?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  stockMovements      StockMovement[]
+  saleReturnItems     SaleReturnItem[]
+  purchaseItems       PurchaseItem[]
   purchaseReturnItems PurchaseReturnItem[]
-  priceLevels PriceLevel[]
-  accountId   Int?
-  account     Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  priceLevels         PriceLevel[]
+  accountId           Int?
+  account             Account?             @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@index([category])
   @@index([categoryId])
@@ -205,11 +204,12 @@ model StoreSetting {
   updatedAt     DateTime @updatedAt
   accountId     Int?
   account       Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
   @@index([accountId])
 }
 
 model StockMovement {
-  id          Int               @id @default(autoincrement())
+  id          String            @id @default(cuid())
   productId   Int
   operatorId  Int
   type        StockMovementType
@@ -222,7 +222,7 @@ model StockMovement {
   product     Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
   operator    Operator          @relation(fields: [operatorId], references: [id], onDelete: Restrict)
   accountId   Int?
-  account     Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  account     Account?          @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@index([productId, createdAt])
   @@index([operatorId])
@@ -238,66 +238,66 @@ model ProductCategory {
   updatedAt      DateTime  @updatedAt
   products       Product[]
   accountId      Int?
-  account        Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  account        Account?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
 }
 
 model Customer {
-  id         Int      @id @default(autoincrement())
-  name       String
-  phone      String?  @unique
-  email      String?  @unique
-  address    String?
-  notes      String?
-  active     Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  sales      Sale[]
+  id          Int          @id @default(autoincrement())
+  name        String
+  phone       String?      @unique
+  email       String?      @unique
+  address     String?
+  notes       String?
+  active      Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  sales       Sale[]
   receivables Receivable[]
   accountId   Int?
-  account     Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  account     Account?     @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@index([name])
 }
 
 model Supplier {
-  id         Int      @id @default(autoincrement())
-  name       String
-  phone      String?  @unique
-  email      String?  @unique
-  address    String?
-  notes      String?
-  active     Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  purchases  Purchase[]
-  payables   Payable[]
-  accountId  Int?
-  account    Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  id        Int        @id @default(autoincrement())
+  name      String
+  phone     String?    @unique
+  email     String?    @unique
+  address   String?
+  notes     String?
+  active    Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  purchases Purchase[]
+  payables  Payable[]
+  accountId Int?
+  account   Account?   @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@index([name])
 }
 
 model Purchase {
-  id              Int                   @id @default(autoincrement())
-  invoiceNumber   String                @unique
-  reference       String?
-  supplierId      Int
-  operatorId      Int
-  subtotal        Int
-  tax             Int                   @default(0)
-  total           Int
-  paymentMethod   String              @default("CASH")
-  paymentStatus   PurchasePaymentStatus @default(PAID)
-  paidAmount      Int                 @default(0)
-  status          PurchaseStatus        @default(COMPLETED)
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  supplier        Supplier              @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  operator        Operator              @relation(fields: [operatorId], references: [id], onDelete: Restrict)
-  items           PurchaseItem[]
-  returns         PurchaseReturn[]
-  accountId       Int?
-  account         Account?             @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  id            String                @id @default(cuid())
+  invoiceNumber String                @unique
+  reference     String?
+  supplierId    Int
+  operatorId    Int
+  subtotal      Int
+  tax           Int                   @default(0)
+  total         Int
+  paymentMethod String                @default("CASH")
+  paymentStatus PurchasePaymentStatus @default(PAID)
+  paidAmount    Int                   @default(0)
+  status        PurchaseStatus        @default(COMPLETED)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  supplier      Supplier              @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  operator      Operator              @relation(fields: [operatorId], references: [id], onDelete: Restrict)
+  items         PurchaseItem[]
+  returns       PurchaseReturn[]
+  accountId     Int?
+  account       Account?              @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@index([supplierId, createdAt])
   @@index([operatorId])
@@ -306,35 +306,35 @@ model Purchase {
 }
 
 model PurchaseItem {
-  id          Int      @id @default(autoincrement())
-  purchaseId  Int
-  productId   Int
-  quantity    Int
-  unitPrice   Int
-  total       Int
-  purchase    Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
-  accountId   Int?
-  account     Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  id         String   @id @default(cuid())
+  purchaseId String
+  productId  Int
+  quantity   Int
+  unitPrice  Int
+  total      Int
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  accountId  Int?
+  account    Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@unique([purchaseId, productId])
   @@index([productId])
 }
 
 model PurchaseReturn {
-  id          Int                   @id @default(autoincrement())
-  purchaseId  Int
-  operatorId  Int
-  reason      String
-  total       Int
-  status      ReturnStatus           @default(COMPLETED)
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
-  purchase    Purchase              @relation(fields: [purchaseId], references: [id], onDelete: Restrict)
-  operator    Operator              @relation(fields: [operatorId], references: [id], onDelete: Restrict)
-  items       PurchaseReturnItem[]
-  accountId   Int?
-  account     Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  id         String               @id @default(cuid())
+  purchaseId String
+  operatorId Int
+  reason     String
+  total      Int
+  status     ReturnStatus         @default(COMPLETED)
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+  purchase   Purchase             @relation(fields: [purchaseId], references: [id], onDelete: Restrict)
+  operator   Operator             @relation(fields: [operatorId], references: [id], onDelete: Restrict)
+  items      PurchaseReturnItem[]
+  accountId  Int?
+  account    Account?             @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@index([purchaseId, createdAt])
   @@index([operatorId])
@@ -342,37 +342,39 @@ model PurchaseReturn {
 }
 
 model PurchaseReturnItem {
-  id          Int            @id @default(autoincrement())
-  returnId    Int
-  productId   Int
-  quantity    Int
-  unitPrice   Int
-  total       Int
+  id             String         @id @default(cuid())
+  returnId       String
+  productId      Int
+  quantity       Int
+  unitPrice      Int
+  total          Int
   purchaseReturn PurchaseReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
-  product     Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
-  accountId   Int?
-  account     Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  product        Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
+  accountId      Int?
+  account        Account?       @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@unique([returnId, productId])
   @@index([productId])
 }
 
 model Sale {
-  id             Int           @id @default(autoincrement())
-  invoiceNumber  String        @unique
-  customerId     Int?
-  subtotal       Int
-  tax            Int           @default(0)
-  total          Int
-  paymentMethod  PaymentMethod
-  status         SaleStatus    @default(COMPLETED)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  customer       Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  items          SaleItem[]
-  returns        SaleReturn[]
-  accountId      Int?
-  account        Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique
+  customerId    Int?
+  subtotal      Int
+  tax           Int           @default(0)
+  total         Int
+  paidAmount    Int           @default(0)
+  change        Int           @default(0)
+  paymentMethod PaymentMethod
+  status        SaleStatus    @default(COMPLETED)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  customer      Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items         SaleItem[]
+  returns       SaleReturn[]
+  accountId     Int?
+  account       Account?      @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@index([customerId])
   @@index([createdAt])
@@ -380,35 +382,36 @@ model Sale {
 }
 
 model SaleItem {
-  id         Int     @id @default(autoincrement())
-  saleId     Int
-  productId  Int
-  quantity   Int
-  unitPrice  Int
-  total      Int
-  sale       Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  product    Product @relation(fields: [productId], references: [id], onDelete: Restrict)
-  accountId  Int?
-  account    Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  id        String   @id @default(cuid())
+  saleId    String
+  productId Int
+  quantity  Int
+  unitPrice Int
+  total     Int
+  sale      Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  accountId Int?
+  account   Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  costPrice Int
 
   @@unique([saleId, productId])
   @@index([productId])
 }
 
 model SaleReturn {
-  id          Int          @id @default(autoincrement())
-  saleId      Int
-  operatorId  Int
-  reason      String
-  total       Int
-  status      ReturnStatus @default(COMPLETED)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  sale        Sale         @relation(fields: [saleId], references: [id], onDelete: Restrict)
-  operator    Operator     @relation(fields: [operatorId], references: [id], onDelete: Restrict)
-  items       SaleReturnItem[]
-  accountId   Int?
-  account     Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  id         String           @id @default(cuid())
+  saleId     String
+  operatorId Int
+  reason     String
+  total      Int
+  status     ReturnStatus     @default(COMPLETED)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  sale       Sale             @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  operator   Operator         @relation(fields: [operatorId], references: [id], onDelete: Restrict)
+  items      SaleReturnItem[]
+  accountId  Int?
+  account    Account?         @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@index([saleId, createdAt])
   @@index([operatorId])
@@ -416,8 +419,8 @@ model SaleReturn {
 }
 
 model SaleReturnItem {
-  id         Int        @id @default(autoincrement())
-  returnId   Int
+  id         String     @id @default(cuid())
+  returnId   String
   productId  Int
   quantity   Int
   unitPrice  Int
@@ -425,7 +428,7 @@ model SaleReturnItem {
   saleReturn SaleReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
   product    Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
   accountId  Int?
-  account    Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  account    Account?   @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@unique([returnId, productId])
   @@index([productId])
@@ -443,13 +446,13 @@ model CashAccount {
   fromMovements  MoneyMovement[] @relation("MovementFromAccount")
   toMovements    MoneyMovement[] @relation("MovementToAccount")
   accountId      Int?
-  account        Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  account        Account?        @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@index([active])
 }
 
 model MoneyMovement {
-  id            Int                @id @default(autoincrement())
+  id            String            @id @default(cuid())
   type          MoneyMovementType
   fromAccountId Int?
   toAccountId   Int?
@@ -457,12 +460,12 @@ model MoneyMovement {
   note          String?
   reference     String?
   operatorId    Int
-  createdAt     DateTime           @default(now())
-  fromAccount   CashAccount?       @relation("MovementFromAccount", fields: [fromAccountId], references: [id], onDelete: Restrict)
-  toAccount     CashAccount?       @relation("MovementToAccount", fields: [toAccountId], references: [id], onDelete: Restrict)
-  operator      Operator           @relation(fields: [operatorId], references: [id], onDelete: Restrict)
+  createdAt     DateTime          @default(now())
+  fromAccount   CashAccount?      @relation("MovementFromAccount", fields: [fromAccountId], references: [id], onDelete: Restrict)
+  toAccount     CashAccount?      @relation("MovementToAccount", fields: [toAccountId], references: [id], onDelete: Restrict)
+  operator      Operator          @relation(fields: [operatorId], references: [id], onDelete: Restrict)
   accountId     Int?
-  account       Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  account       Account?          @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
   @@index([fromAccountId, createdAt])
@@ -471,20 +474,20 @@ model MoneyMovement {
 }
 
 model Receivable {
-  id           Int      @id @default(autoincrement())
+  id           String    @id @default(cuid())
   customerId   Int?
   customerName String
   reference    String?
   amount       Int
-  paidAmount   Int      @default(0)
+  paidAmount   Int       @default(0)
   dueDate      DateTime?
   note         String?
-  status       String   @default("OPEN")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  status       String    @default("OPEN")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   customer     Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   accountId    Int?
-  account      Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  account      Account?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@index([customerId])
   @@index([status])
@@ -492,20 +495,20 @@ model Receivable {
 }
 
 model Payable {
-  id           Int      @id @default(autoincrement())
+  id           String    @id @default(cuid())
   supplierId   Int?
   supplierName String
   reference    String?
   amount       Int
-  paidAmount   Int      @default(0)
+  paidAmount   Int       @default(0)
   dueDate      DateTime?
   note         String?
-  status       String   @default("OPEN")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  status       String    @default("OPEN")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   supplier     Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   accountId    Int?
-  account      Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  account      Account?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@index([supplierId])
   @@index([status])

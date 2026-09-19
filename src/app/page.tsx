@@ -185,12 +185,16 @@ export default function Home() {
   async function completeSale() {
     if (!itemCount) return;
     try {
+      // Menentukan jumlah nominal uang yang dibayarkan berdasarkan metode transaksi
+      const cleanPaidAmount = payment === "Tunai" ? (received || total) : total;
+
       const response = await fetch("/api/sales", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           paymentMethod: payment.toUpperCase(),
-          items: cartItems.map((product) => ({ productId: product.id, quantity: cart[product.id] })),
+          paidAmount: cleanPaidAmount, // Kirim nominal pembayaran ke API
+          items: cartItems.map((product) => ({ productId: Number(product.id), quantity: Number(cart[product.id]) })),
         }),
       });
       const result = await response.json();
@@ -221,7 +225,7 @@ export default function Home() {
     <main className="app-shell">
       <section className="workspace" id="kasir">
         <header className="topbar">
-          <div><p className="eyebrow">RABU, 16 SEPTEMBER 2026</p><h1>Selamat datang{operatorName ? `, ${operatorName}` : ""} <span>✦</span></h1></div>
+          <div><p className="eyebrow">SABTU, 19 SEPTEMBER 2026</p><h1>Selamat datang{operatorName ? `, ${operatorName}` : ""} <span>✦</span></h1></div>
         </header>
         <div className="content-grid">
           <section className="catalog">

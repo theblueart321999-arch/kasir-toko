@@ -76,7 +76,7 @@ export default function ReportsDashboard() {
 
       <section className="balance-report-metrics" aria-label="Ringkasan operasional">
         <article><span>OMSET</span><strong>{amount(operations.sales.total)}</strong><small>{operations.sales.count} transaksi</small></article>
-        <article><span>LABA</span><strong>{signedAmount(operations.financial.estimatedProfit)}</strong><small>Omset dikurangi pembelian</small></article>
+        <article><span>LABA</span><strong>{signedAmount(operations.financial.estimatedProfit)}</strong><small>Omset dikurangi HPP</small></article>
         <article><span>PEMASUKAN</span><strong>{amount(operations.financial.income)}</strong><small>Arus kas masuk</small></article>
         <article><span>PENGELUARAN</span><strong>{amount(operations.financial.expense)}</strong><small>Arus kas keluar</small></article>
         <article><span>ESTIMASI LABA BERSIH</span><strong>{signedAmount(estimatedNet)}</strong><small>Laba + pemasukan - pengeluaran</small></article>

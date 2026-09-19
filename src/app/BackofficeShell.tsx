@@ -27,7 +27,7 @@ const groups = [
   ] },
   { label: "Keuangan", items: [
     { href: "/keuangan/bank", icon: "▤", label: "Akun Uang Kas" },
-    { href: "/keuangan/atur-uang", icon: "↕", label: "Atur Uang Kas" },
+    { href: "/keuangan/pemasukan-pengeluaran", icon: "↕", label: "Pemasukan & Pengeluaran Kas" },
     { href: "/keuangan/arus-kas", icon: "◷", label: "Arus Kas" },
   ] },
   { label: "Laporan", items: [
